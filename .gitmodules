@@ -1,0 +1,3 @@
+[submodule "mkzbase"]
+	path = mkzbase
+	url = git@github.com:gyulalaszlo/mkzbase.git
