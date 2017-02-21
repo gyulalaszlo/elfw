@@ -16,11 +16,10 @@ namespace elfw {
         class OrderedSet {
         public:
 
-            template <typename Seq>
-            OrderedSet(const Seq& src)
-            {
+            template<typename Seq>
+            OrderedSet(const Seq& src) {
                 // Store the indices for the hashes
-                for( size_t i = 0; i < src.size(); ++i ) {
+                for (size_t i = 0; i < src.size(); ++i) {
                     const auto hsh = std::hash<typename Seq::value_type>()(src[i]);
                     hashToIndex.insert({hsh, i});
                 }
@@ -47,7 +46,6 @@ namespace elfw {
         };
 
 
-
         struct OrderedSetPatch {
             std::size_t hash, idxA, idxB;
         };
@@ -55,11 +53,12 @@ namespace elfw {
         using Patches = std::vector<OrderedSetPatch>;
 
 
-
         // Takes the difference between two ordered sets
-        void diff(const OrderedSet& a, const OrderedSet& b, Patches& onlyInA, Patches& onlyInB, Patches& reordered, Patches& constant) {
+        void diff(
+                const OrderedSet& a, const OrderedSet& b,
+                Patches& onlyInA, Patches& onlyInB, Patches& reordered, Patches& constant) {
             // TODO: do this more efficiently
-            for(const auto& ae : a.hashes()) {
+            for (const auto& ae : a.hashes()) {
                 const auto hsh = ae.first;
                 const auto idxA = ae.second;
 
@@ -76,7 +75,7 @@ namespace elfw {
                 onlyInA.push_back({ae.first, ae.second, 0});
             }
 
-            for(const auto& be : b.hashes()) {
+            for (const auto& be : b.hashes()) {
                 if (a.contains(be.first)) continue;
                 onlyInB.push_back({be.first, 0, be.second});
             }

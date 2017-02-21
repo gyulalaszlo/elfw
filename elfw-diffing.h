@@ -11,106 +11,100 @@
 namespace elfw {
 
 
-    // A patch in the tree
-    template<typename T>
-    struct ViewPatch {
+    namespace patch {
+        // DRY
+        template <typename T>
+        struct Base { const T* el; const Frame<double>* frame; size_t idx; };
 
-        enum Op {
-            Add, Remove, Reorder
-        };
+        // The actual patch operations
+        template <typename T> struct Add { Base<T> b; };
+        template <typename T> struct Remove { Base<T> a; };
+        template <typename T> struct Reorder { Base<T> a, b; };
 
-        const T* inA;
-        const T* inB;
+    }
 
-        const Frame<double>* frameA;
-        const Frame<double>* frameB;
+    // Patch operations from diffing
+    template <typename T>
+    using Patch = mkz::variant< patch::Add<T>, patch::Remove<T>, patch::Reorder<T> >;
 
-        size_t idxA, idxB;
-        Op op;
-    };
+    // Instantiate the template class here
+    using CommandPatch = Patch<draw::Command>;
 
 
-    template<typename T, typename SeqA, typename SeqB>
-    void diffToPatch(SeqA&& a, SeqB&& b, std::vector<ViewPatch<T>>& patches) {
-        using namespace containers;
-        using VP = ViewPatch<T>;
-        using Op = typename ViewPatch<T>::Op;
-        OrderedSet as(a), bs(b);
+    // FWD
+    namespace _impl {
+        template<typename T, typename SeqA, typename SeqB>
+        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches);
 
-        Patches inA, inB, reordered, constant;
-        diff(as, bs, inA, inB, reordered, constant);
-
-        const auto appendViewPatch = [&](Op op, const Patches& osPatches) {
-            auto start = patches.size();
-            patches.resize(patches.size() + osPatches.size());
-            std::transform(osPatches.begin(), osPatches.end(), &patches[start], [&](const OrderedSetPatch& p) {
-                const auto& ae = a[p.idxA];
-                const auto& be = b[p.idxB];
-                return VP{&ae, &be, &ae.frame, &be.frame, p.idxA, p.idxB, op};
-            });
-        };
-
-        appendViewPatch(Op::Remove, inA);
-        appendViewPatch(Op::Add, inB);
-        appendViewPatch(Op::Reorder, reordered);
-
-    };
-
+        void diffChildren( const Div& a, const Div& b, std::vector<CommandPatch>& patches);
+    }
 
 
     // Diffs two different divs
-    void diff(const Div& a, const Div& b, std::vector<ViewPatch<draw::Command>>& patches) {
-
-        auto isFrameEq = (a.frame == b.frame);
-
-        // if the frame is not eq, then we need to re-render every child (as we dont cache for now
-        if (!isFrameEq) {
-            printf("Frame differs\n");
+    void diff(const Div& a, const Div& b, std::vector<CommandPatch>& patches) {
+        // if the recursive hash is the same, the subtree should be the same
+        if (recursive_hash(a) == recursive_hash(b)) {
             return;
         }
+        _impl::diffChildren(a, b, patches);
+        _impl::diffToPatch(a.drawCommands, b.drawCommands, patches);
+    }
 
-        const auto printDiff = [](const char* prefix, const auto& seq) {
-            for (auto& del : seq) {
-                std::cout << prefix << " " << del.hash << " [ idxA=" << del.idxA << ", idxB=" << del.idxB << "]\n";
-            }
-        };
 
-        const auto diffChildren = [&]() {
+
+    namespace _impl {
+
+        void diffChildren(const Div& a, const Div& b, std::vector<CommandPatch>& patches) {
             using namespace containers;
             OrderedSet as(a.childDivs), bs(b.childDivs);
 
             Patches inA, inB, reordered, constant;
             diff(as, bs, inA, inB, reordered, constant);
 
-
-            printDiff("- ", inA);
-            printDiff("+ ", inB);
-            printDiff("% ", reordered);
-
-
-            using stdhelpers::hash_seq;
-
             // check the children that stayed the same
             for (auto& child : constant) {
                 const auto& ac = a.childDivs[child.idxA];
                 const auto& bc = b.childDivs[child.idxB];
 
-                // if the hash of evrything is the same, nothing should happen
-                if (hash_seq(0, ac.childDivs) == hash_seq(0, bc.childDivs)
-                    && hash_seq(0, ac.drawCommands) == hash_seq(0, bc.drawCommands)) {
-                    continue;
-                }
-
                 // Otherwise diff to find out what changed
                 diff(a.childDivs[child.idxA], b.childDivs[child.idxB], patches);
             }
-
         };
 
 
-        diffChildren();
-        diffToPatch(a.drawCommands, b.drawCommands, patches);
+        template<typename T, typename SeqA, typename SeqB>
+        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches) {
+            using namespace containers;
+            OrderedSet as(a), bs(b);
 
+            enum Op { Remove, Add, Reorder };
+
+            Patches inA, inB, reordered, constant;
+            diff(as, bs, inA, inB, reordered, constant);
+
+            auto appendViewPatch = [&](const Op op, const Patches& osPatches) {
+                const auto start = patches.size();
+                patches.resize(patches.size() + osPatches.size());
+                std::transform(osPatches.begin(), osPatches.end(), &patches[start], [&](const OrderedSetPatch& p) -> Patch<T> {
+                    const auto& ae = a[p.idxA];
+                    const auto& be = b[p.idxB];
+                    switch (op) {
+                        case Remove:
+                            return patch::Remove<T> {{ &ae, &ae.frame, p.idxA }};
+                        case Add:
+                            return patch::Add<T> {{ &be, &be.frame, p.idxB }};
+                        case Reorder:
+                            return patch::Reorder<T> {{ &ae, &ae.frame, p.idxA }, { &be, &be.frame, p.idxB }};
+                    };
+                    assert(false);
+                });
+            };
+
+            appendViewPatch(Remove, inA);
+            appendViewPatch(Add, inB);
+            appendViewPatch(Reorder, reordered);
+
+        };
 
     }
 }

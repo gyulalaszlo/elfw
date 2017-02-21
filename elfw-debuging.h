@@ -3,31 +3,37 @@
 // Created by Miles Gibson on 21/02/17.
 //
 
+#include <iostream>
 #include "elfw-viewtree.h"
+#include "elfw-diffing.h"
 
 namespace elfw {
 
+    // BASE DEBUG
     // ==========
 
-    template < typename S>
+    template<typename S>
     S& operator<<(S& s, const Vec2<double>& v) {
         s << "{ " << v.x << ", " << v.y << " }";
         return s;
     }
 
-    template < typename S>
+    template<typename S>
     S& operator<<(S& s, const Rect<double>& v) {
         s << "{ pos=" << v.pos << ", size=" << v.size << " }";
         return s;
     }
 
-    template <typename S>
+    template<typename S>
     S& operator<<(S& s, const Frame<double>& frame) {
         s << "{ abs=" << frame.absolute << ", rel=" << frame.relative << "}";
         return s;
     }
 
     namespace draw {
+
+        // DRAWING BASICS DEBUG
+        // ====================
 
         template<typename S>
         S& operator<<(S& s, const Color& c) {
@@ -70,6 +76,9 @@ namespace elfw {
         }
 
 
+        // COMMANDS DEBUG
+        // ==============
+
         namespace cmds {
 
             template<typename S>
@@ -96,18 +105,21 @@ namespace elfw {
         }
     }
 
+
+    // TREE DEBUG
     // ==========
 
-    template <typename S>
+    template<typename S>
     void debug(S& s, const Div& div, int indent = 0) {
 
-        auto doIndent = [&](){
-            for (int i=0; i < indent * 4; ++i)
+        auto doIndent = [&]() {
+            for (int i = 0; i < indent * 4; ++i)
                 s << " ";
         };
 
         s << "\n";
-        doIndent(); s << "Div: '" << div.key << "'  " << div.frame << "\n";
+        doIndent();
+        s << "Div: '" << div.key << "'  " << div.frame << "\n";
 
         indent += 1;
 
@@ -118,14 +130,35 @@ namespace elfw {
         }
 
         for (auto& child : div.childDivs) {
-            debug(s,child, indent + 1);
+            debug(s, child, indent + 1);
         }
     }
 
-    template <typename S>
+    template<typename S>
     S& operator<<(S& s, const Div& d) {
         debug(s, d, 0);
         return s;
     }
+
+
+    // DIFFING DEBUG
+    // =============
+
+
+
+    template<typename S, typename T>
+    S& operator<<(S& s, const patch::Base<T>& p) {
+        return s << "( idx=" << p.idx << ", frame=" << *p.frame << " )\n      -> " << *p.el;
+    }
+
+    template<typename S, typename T>
+    S& operator<<(S& s, const Patch<T>& p) {
+        p.match(
+                [&](const patch::Remove<T>& p) { s << "[REMOVE] " << p.a; },
+                [&](const patch::Add<T>& p) { s << "[ADD] " << p.b; },
+                [&](const patch::Reorder<T>& p) { s << "[REORDER]\n    old=" << p.a << "\n    new=" << p.b; }
+        );
+        return s;
+    };
 }
 

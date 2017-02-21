@@ -1,4 +1,5 @@
 #pragma once
+
 #include "elfw-base.h"
 #include "elfw-draw.h"
 #include "elfw-viewtree.h"
@@ -23,16 +24,12 @@ namespace stdhelpers {
         using T = typename Seq::value_type;
         std::hash<T> hasher;
         seed = seq.size();
-        for(auto& i : seq) {
+        for (auto& i : seq) {
             seed ^= hasher(i) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
         return seed;
     }
 }
-
-
-
-
 
 
 #define UNITY_HASH(type) \
@@ -59,7 +56,7 @@ MAKE_HASHABLE(elfw::Frame<double>, t.absolute, t.relative)
 MAKE_HASHABLE(elfw::draw::Color, t.a, t.r, t.g, t.b)
 MAKE_HASHABLE(elfw::draw::stroke::Solid, t.width, t.color)
 
-UNITY_HASH(elfw::draw::None )
+UNITY_HASH(elfw::draw::None)
 UNITY_HASH(std::nullptr_t)
 
 MAKE_HASHABLE(elfw::draw::cmds::Rectangle, t.fill, t.stroke)
@@ -67,4 +64,27 @@ MAKE_HASHABLE(elfw::draw::cmds::RoundedRectangle, t.radius, t.fill, t.stroke)
 MAKE_HASHABLE(elfw::draw::cmds::Ellipse, t.fill, t.stroke)
 
 MAKE_HASHABLE(elfw::draw::Command, t.frame, t.cmd)
-MAKE_HASHABLE(elfw::Div, t.frame, t.key )
+
+// The std::hash of a Div does not care about chlild divs or draw commands
+MAKE_HASHABLE(elfw::Div, t.frame, t.key)
+
+
+namespace elfw {
+    // Hashes a div recursively (so the hash represents the entire tree
+    // unlike the std::hash override which is for header and frame only
+    std::size_t recursive_hash(const Div& t, size_t seed = 0) {
+        seed = stdhelpers::hash_combine(
+                seed,
+                t,
+                stdhelpers::hash_seq(0, t.drawCommands)
+        );
+
+
+        for (auto& child : t.childDivs) {
+            seed = recursive_hash(child, seed);
+        }
+
+        return seed;
+    }
+
+}

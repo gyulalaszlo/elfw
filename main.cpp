@@ -153,10 +153,10 @@ int main() {
     const auto v1 = view(m);
     std::cout << v1;
 
-    std::vector<ViewPatch<elfw::draw::Command>> cmdDiff = {};
+    std::vector<elfw::CommandPatch> cmdDiff = {};
     elfw::diff(v0, v1, cmdDiff);
     for (auto& p : cmdDiff) {
-        std::cout << "[ DC: " << p.op << " ] " <<  " idxA=" << p.idxA << ", idxB=" << p.idxB << ", frameA=" << *p.frameA << ", frameB=" << *p.frameB << "\n";
+        std::cout << ":: " << p << "\n";
     }
     return 0;
 }
