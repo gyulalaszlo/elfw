@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include "mkzbase/variant.h"
 
 #include "elfw-base.h"
@@ -11,96 +11,135 @@
 
 namespace elfw {
 
-    class OrderedSet {
-    public:
 
-        template <typename Seq>
-        OrderedSet(const Seq& src)
-        {
-            // Store the indices for the hashes
-            for( size_t i = 0; i < src.size(); ++i ) {
-                hashToIndex[std::hash<typename Seq::value_type>()(src[i])] = i;
-            }
-        }
+    namespace containers {
 
-        size_t operator[](const size_t hsh) const {
-            if (!contains(hsh)) return 0xbeefbeef;
-            return hashToIndex.at(hsh);
-        }
+        class OrderedSet {
+        public:
 
-        bool contains(const size_t hsh) const {
-            return (hashToIndex.count(hsh) > 0);
-        }
-
-        using iterator = std::unordered_map<std::size_t, std::size_t>::iterator;
-        using const_iterator = std::unordered_map<std::size_t, std::size_t>::const_iterator;
-
-        iterator begin() { return hashToIndex.begin(); }
-        iterator end() { return hashToIndex.end(); }
-        const_iterator begin() const { return hashToIndex.begin(); }
-        const_iterator end() const { return hashToIndex.end(); }
-
-    private:
-        // the source collection
-        std::unordered_map<std::size_t, std::size_t> hashToIndex;
-
-    };
-
-
-
-    struct OrderedSetPatch {
-        std::size_t hash, idxA, idxB;
-    };
-
-    using Patches = std::vector<OrderedSetPatch>;
-
-
-
-    void diff(const OrderedSet& a, const OrderedSet& b, Patches& onlyInA, Patches& onlyInB, Patches& reordered) {
-        // TODO: do this more efficiently
-        for(const auto& ae : a) {
-            const auto hsh = ae.first;
-            const auto idxA = ae.second;
-
-            // check for reordering
-            if (b.contains(hsh)) {
-                const auto idxB = b[hsh];
-                if (idxA != idxB) {
-                    reordered.push_back({hsh, idxA, idxB});
+            template <typename Seq>
+            OrderedSet(const Seq& src)
+            {
+                // Store the indices for the hashes
+                for( size_t i = 0; i < src.size(); ++i ) {
+                    const auto hsh = std::hash<typename Seq::value_type>()(src[i]);
+                    hashToIndex.insert({hsh, i});
                 }
-                continue;
             }
-            onlyInA.push_back({ae.first, ae.second, 0});
+
+            size_t operator[](const size_t hsh) const {
+                if (!contains(hsh)) return 0xbeefbeef;
+                return hashToIndex.at(hsh);
+            }
+
+            bool contains(const size_t hsh) const {
+                return (hashToIndex.count(hsh) > 0);
+            }
+
+            using iterator = std::map<std::size_t, std::size_t>::iterator;
+            using const_iterator = std::map<std::size_t, std::size_t>::const_iterator;
+
+            const std::map<std::size_t, std::size_t>& hashes() const { return hashToIndex; };
+
+        private:
+            // the source collection
+            std::map<std::size_t, std::size_t> hashToIndex;
+
+        };
+
+
+
+        struct OrderedSetPatch {
+            std::size_t hash, idxA, idxB;
+        };
+
+        using Patches = std::vector<OrderedSetPatch>;
+
+
+
+        void diff(const OrderedSet& a, const OrderedSet& b, Patches& onlyInA, Patches& onlyInB, Patches& reordered, Patches& constant) {
+            // TODO: do this more efficiently
+            for(const auto& ae : a.hashes()) {
+                const auto hsh = ae.first;
+                const auto idxA = ae.second;
+
+                // check for reordering
+                if (b.contains(hsh)) {
+                    const auto idxB = b[hsh];
+                    if (idxA != idxB) {
+                        reordered.push_back({hsh, idxA, idxB});
+                    } else {
+                        constant.push_back({hsh, idxA, idxB});
+                    }
+                    continue;
+                }
+                onlyInA.push_back({ae.first, ae.second, 0});
+            }
+
+            for(const auto& be : b.hashes()) {
+                if (a.contains(be.first)) continue;
+                onlyInB.push_back({be.first, 0, be.second});
+            }
+
+            // TODO: what if inserting reorders stuff?
         }
 
-        for(const auto& be : b) {
-            if (b.contains(be.first)) continue;
-            onlyInB.push_back({be.first, 0, be.second});
-        }
 
-        // TODO: what if inserting reorders stuff?
     }
-
 
     // Represents a box wrapping relative coordinates
     struct Div {
+        const char* key;
         const Frame<double> frame;
 
         const std::vector<const Div> childDivs;
         const std::vector<const draw::Command> drawCommands;
     };
 
-    struct DrawCommandDiff {
-        enum Type { kAdd, kRemove };
 
-        // We patch this node
-        Div* at;
-        Div* which;
+    template <typename T>
+    struct ViewPatch {
 
-        Type type;
+        enum Op { Add, Remove, Reorder };
+
+        const T* inA;
+        const T* inB;
+
+        const Frame<double>* frameA;
+        const Frame<double>* frameB;
+
+        size_t idxA, idxB;
+        Op op;
     };
 
-    void diff(const Div& a, const Div& b) {
+
+    template <typename T, typename SeqA, typename SeqB>
+    void diffToPatch(SeqA&& a, SeqB&& b, std::vector<ViewPatch<T>>& patches ) {
+        using namespace containers;
+        using VP = ViewPatch<T>;
+        using Op = typename ViewPatch<T>::Op;
+        OrderedSet as(a), bs(b);
+
+        Patches inA, inB, reordered, constant;
+        diff(as, bs, inA, inB, reordered, constant );
+
+        const auto appendViewPatch = [&](Op op, const Patches& osPatches){
+            auto start = patches.size();
+            patches.resize( patches.size() + osPatches.size() );
+            std::transform(osPatches.begin(), osPatches.end(), &patches[start], [&](const OrderedSetPatch& p){
+                const auto& ae = a[p.idxA];
+                const auto& be = b[p.idxB];
+                return VP{ &ae, &be, &ae.frame, &be.frame, p.idxA, p.idxB, op};
+            });
+        };
+
+        appendViewPatch(Op::Remove, inA);
+        appendViewPatch(Op::Add, inB);
+        appendViewPatch(Op::Reorder, reordered);
+
+    };
+
+    void diff(const Div& a, const Div& b, std::vector<ViewPatch<draw::Command>>& patches) {
 
         auto isFrameEq = (a.frame == b.frame);
 
@@ -110,58 +149,54 @@ namespace elfw {
             return;
         }
 
-        OrderedSet as(a.drawCommands), bs(b.drawCommands);
+        const auto printDiff = [](const char* prefix, const auto& seq) {
+            for (auto& del : seq) {
+                std::cout << prefix << " " << del.hash << " [ idxA=" << del.idxA << ", idxB=" << del.idxB << "]\n";
+            }
+        };
 
-        Patches inA, inB, reordered;
-        diff(as, bs, inA, inB, reordered );
+        const auto diffChildren = [&](){
+            using namespace containers;
+            OrderedSet as(a.childDivs), bs(b.childDivs);
 
-
-
-
-        // if the frame is equal.
-        // Draw order is widget first, children later, so
-        // diff draw commands with the frame.
-        // FOR NOW: if there is a draw command inserted or removed, all draw commands are replaced
-
-        // Put the elements into an ordered
+            Patches inA, inB, reordered, constant;
+            diff(as, bs, inA, inB, reordered, constant );
 
 
-        // Check if the draw command length is the same.
-//        if (a.drawCommands.size() != b.drawCommands.size()) {
-            // re-draw the widget
-//        }
-
-        //
+            printDiff("- ", inA);
+            printDiff("+ ", inB);
+            printDiff("% ", reordered);
 
 
+            using stdhelpers::hash_seq;
+
+            // check the children that stayed the same
+            for (auto& child : constant) {
+                const auto& ac = a.childDivs[child.idxA];
+                const auto& bc = b.childDivs[child.idxB];
+
+                // if the hash of evrything is the same, nothing should happen
+                if (hash_seq(0, ac.childDivs) == hash_seq(0, bc.childDivs)
+                        && hash_seq(0, ac.drawCommands) == hash_seq(0, bc.drawCommands))
+                {
+                    continue;
+                }
+
+                // Otherwise diff to find out what changed
+                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], patches);
+            }
+
+        };
 
 
-        // calc the frame
-        // collapse all draw commands
+
+        diffChildren();
+        diffToPatch(a.drawCommands, b.drawCommands, patches);
+
+
 
     }
 
-
-    // Debugging
-    // =========
-
-    template < typename S>
-    S& operator<<(S& s, const Vec2<double>& v) {
-        s << "{ " << v.x << ", " << v.y << " }";
-        return s;
-    }
-
-    template < typename S>
-    S& operator<<(S& s, const Rect<double>& v) {
-        s << "{ pos=" << v.pos << ", size=" << v.size << " }";
-        return s;
-    }
-
-    template <typename S>
-    S& operator<<(S& s, const Frame<double>& frame) {
-        s << "{ abs=" << frame.absolute << ", rel=" << frame.relative << "}";
-        return s;
-    }
 
     template <typename S>
     void debug(S& s, const Div& div, int indent = 0) {
@@ -172,7 +207,7 @@ namespace elfw {
         };
 
         s << "\n";
-        doIndent(); s << "Div: " << div.frame << "\n";
+        doIndent(); s << "Div: '" << div.key << "'  " << div.frame << "\n";
 
         indent += 1;
 
@@ -193,3 +228,6 @@ namespace elfw {
         return s;
     }
 }
+
+MAKE_HASHABLE(elfw::Div, t.frame, t.key )
+

@@ -8,12 +8,16 @@ namespace {
 
     using namespace elfw;
 
+    struct MouseDragged { Vec2d start; Vec2d last; };
 
     struct Model {
 
 
         double ballX, ballY;
         double ballTargetX, ballTargetY;
+
+
+        mkz::variant< std::nullptr_t, MouseDragged > mouseState;
 
     };
 
@@ -48,8 +52,14 @@ namespace {
         using namespace elfw::draw;
         using namespace elfw::draw::cmds;
 
+
         auto baseRect = [&](){
+            double strokeWidth = model.mouseState.match(
+                    [](const std::nullptr_t& _) { return 1.0; },
+                    [](const MouseDragged& m) { return 4.0; }
+            );
             return Div{
+                    "base",
                     frame::full<double>,
                     {},
                     {
@@ -57,7 +67,7 @@ namespace {
                                     frame::full<double>,
                                     Rectangle{
                                             color::hex(0xff333333),
-                                            draw::None{}
+                                            stroke::None{}
                                     }
                             },
                             {
@@ -65,7 +75,12 @@ namespace {
                                     RoundedRectangle{
                                             5.0,
                                             color::hex(0xff222222),
-                                            draw::SolidStroke{ 2.0, color::hex(0x66ffffff) }
+                                            model.mouseState.match(
+                                                    [](const std::nullptr_t& _) -> draw::Stroke { return stroke::none(); },
+                                                    [](const MouseDragged& m) -> draw::Stroke {
+                                                        return stroke::Solid{ 4.0, color::hex(0x66ffffff) };
+                                                    }
+                                            )
                                     }
                             }
                     }
@@ -76,6 +91,7 @@ namespace {
         auto pluck = [&](){
             const auto r = 8;
             return Div{
+                    "pluck",
                     frame::full<double>,
                     {},
                     {
@@ -89,7 +105,7 @@ namespace {
                                     },
                                     Ellipse{
                                             color::hex(0xff333333),
-                                            draw::None{},
+                                            stroke::none(),
                                     },
                             }
                     }
@@ -97,12 +113,29 @@ namespace {
         };
 
         return {
+                "root",
                 { {{0,0}, {200, 100}}  },
                 {
                         baseRect(),
                         pluck(),
+                        Div {
+                                "test", frame::full<double>,
+                                {},
+                                {
+                                        { frame::full<double>, Ellipse { color::hex(0xff987654), stroke::none() }}
+                                }
+                        }
                 },
-                {}
+                {
+                        {
+                                frame::full<double>,
+                                Rectangle{
+                                        color::hex(0xff555555),
+                                        stroke::none(),
+                                }
+                        },
+
+                }
         };
     }
 }
@@ -116,7 +149,14 @@ int main() {
 
     m.ballX = 0.435;
     m.ballY = 0.23;
+    m.mouseState = MouseDragged { {0,0} };
     const auto v1 = view(m);
     std::cout << v1;
+
+    std::vector<ViewPatch<elfw::draw::Command>> cmdDiff = {};
+    elfw::diff(v0, v1, cmdDiff);
+    for (auto& p : cmdDiff) {
+        std::cout << "[ DC: " << p.op << " ] " <<  " idxA=" << p.idxA << ", idxB=" << p.idxB << ", frameA=" << *p.frameA << ", frameB=" << *p.frameB << "\n";
+    }
     return 0;
 }
