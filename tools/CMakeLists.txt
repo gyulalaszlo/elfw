@@ -1,0 +1,1 @@
+add_executable(elfw-resources elfw-resources-main.cpp elfw-resources.h)

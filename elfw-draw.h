@@ -54,6 +54,7 @@ namespace elfw {
 
         // Debug
         // =====
+
         template <typename S>
         S& operator<<(S& s, const Color& c) {
             s << "{ Color: r=" << (uint32_t)c.r << ", g=" << (uint32_t)c.g << ", b=" << (uint32_t)c.b << ", a=" << (uint32_t)c.a << " }";
