@@ -38,9 +38,14 @@ namespace stdhelpers {
 
         template <typename T>
         void add(const T& v) noexcept {
-            hash_combine(seed, std::hash<T>()(v));
+            seed = hash_combine(seed, std::hash<T>()(v));
         }
 
+        template <typename T, typename... Args>
+        void add(const T& v, Args&&... args) noexcept {
+            seed = hash_combine(seed, std::hash<T>()(v));
+            add(args...);
+        }
         void combine( std::size_t hsh ) noexcept {
             seed = seed ^(hsh + 0x9e3779b9 + (seed << 6) + (seed >> 2));
         }
@@ -103,24 +108,14 @@ namespace elfw {
         std::size_t recursiveHash;
     };
 
+    using DivHashVector = std::vector<DivHash>;
+    using CommandHashVector = std::vector<std::size_t>;
+
 
     namespace div_hash {
-//        std::size_t children_hash(const Div& t) {
-//            std::size_t seed = 0;
-//
-//            for (auto& child : t.childDivs) {
-//                seed = recursive_hash(child, seed);
-//            }
-//
-//            return seed;
-//        }
 
-//        std::size_t draw_commands_hash(const Div& t, size_t seed = 0) {
-//            return stdhelpers::hash_seq(0, t.drawCommands);
-//        }
-
-        // returns the hash index for the this
-        std::size_t update(ResolvedDiv& div, std::vector<DivHash>& hashes) {
+        // returns the recursive hash
+        std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes) {
             using namespace stdhelpers;
             // store the size of the hashes vector, so we keep our entry
             const size_t hashIdx = hashes.size();
@@ -128,7 +123,7 @@ namespace elfw {
             hashes.push_back({});
             // get the header hash
             hash_builder headerHash;
-            headerHash.add(div.key);
+            headerHash.add(std::string(div.key));
             headerHash.add(div.frame);
 
             // command hashes
@@ -137,30 +132,25 @@ namespace elfw {
             hash_builder commandsHash(div.drawCommands.size());
             // calculate the draw commands hash
             for (auto& c : div.drawCommands) {
-                // TODO: refactor me out of here?
-                hash_builder cmdHash;
-                cmdHash.add(c.frame);
-                cmdHash.add(c.cmd);
 
-                // update the hash in the actual command
-                // TODO: should this assignment stay here?
-                c.hash = commandsHash.get();
+                hash_builder cmdHash;
+                cmdHash.add( c.frame, c.cmd );
+
+                c.hashIndex = cmdHashes.size();
+                cmdHashes.emplace_back(cmdHash.get());
                 // combine with the commands hash
                 commandsHash.combine(cmdHash.get());
             }
 
             // children hashes
-
             hash_builder childDivsHash(div.childDivs.size());
             for (auto& c : div.childDivs) {
-                // update each childrens hash recursively
-                update(c, hashes);
                 // combine the child recursive hash with our hash
-                childDivsHash.combine(hashes[c.hashIndex].recursiveHash);
+                childDivsHash.combine(update(c, hashes, cmdHashes));
             }
 
             hash_builder recursiveHash;
-            recursiveHash.combine(headerHash);
+            recursiveHash.combine(headerHash.get());
             recursiveHash.combine(commandsHash);
             recursiveHash.combine(childDivsHash);
 
@@ -174,40 +164,9 @@ namespace elfw {
 
             // assign to the hash index
             div.hashIndex = hashIdx;
-            return hashIdx;
+            return recursiveHash.get();
 
         }
     }
 
-//    // Hashes a div recursively (so the hash represents the entire tree
-//    // unlike the std::hash override which is for header and frame only
-//    std::size_t recursive_hash(const Div& t, size_t seed = 0) {
-//        seed = stdhelpers::hash_combine(
-//                seed,
-//                t,
-//                draw_
-//                stdhelpers::hash_seq(0, t.drawCommands)
-//        );
-//
-//
-//        for (auto& child : t.childDivs) {
-//            seed = recursive_hash(child, seed);
-//        }
-//
-//        return seed;
-//    }
-//
-//    std::size_t children_hash(const Div& t) {
-//        std::size_t seed = 0;
-//
-//        for (auto& child : t.childDivs) {
-//            seed = recursive_hash(child, seed);
-//        }
-//
-//        return seed;
-//    }
-//
-//    std::size_t draw_commands_hash(const Div& t, size_t seed = 0) {
-//        return stdhelpers::hash_seq(0, t.drawCommands);
-//    }
 }

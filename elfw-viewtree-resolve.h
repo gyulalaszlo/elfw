@@ -9,6 +9,11 @@
 
 namespace elfw {
 
+    struct ViewTreeWithHashes {
+        ResolvedDiv root;
+        DivHashVector hashes;
+        CommandHashVector cmdHashes;
+    };
 
 
     namespace resolve {
@@ -54,15 +59,23 @@ namespace elfw {
                 return std::move(resolve(frameRect, c));
             });
 
-#ifdef HASHES
-            auto hashes = std::vector<DivHash>{};
-
-            div_hash::update(resolvedDiv, hashes);
-#endif
-
             return resolvedDiv;
 
         }
 
+
+
+        ViewTreeWithHashes convertToResolved(Rect<double> viewRect, const Div& div) {
+            auto resolvedDiv = resolve(viewRect, div);
+
+            auto hashes = DivHashVector{};
+            auto cmdHashes = CommandHashVector{};
+            div_hash::update(resolvedDiv, hashes, cmdHashes);
+
+            return { std::move(resolvedDiv), std::move(hashes), std::move(cmdHashes) };
+        }
+
+
     }
+
 }

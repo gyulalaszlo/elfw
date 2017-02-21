@@ -154,15 +154,18 @@ int main() {
     const auto v1 = view(m);
     std::cout << v1;
 
-    std::vector<elfw::CommandPatch> cmdDiff = {};
-    elfw::diff(v0, v1, cmdDiff);
 
 
     // resolve the tree 1
-    auto v0resolved = elfw::resolve::resolve(Rect<double>{{100, 200}, {640, 480}}, v0);
+    auto viewRect = Rect<double>{{100, 200}, {640, 480}};
+    auto v0resolved = elfw::resolve::convertToResolved(viewRect, v0);
+    auto v1resolved = elfw::resolve::convertToResolved(viewRect, v1);
 
-    std::cout << v0resolved << "\n";
+    std::cout << v0resolved.root << "\n\n";
+    std::cout << v1resolved.root << "\n\n";
 
+    std::vector<elfw::CommandPatch> cmdDiff = {};
+    elfw::diff(v0resolved, v1resolved, cmdDiff);
     for (auto& p : cmdDiff) {
         std::cout << ":: " << p << "\n";
     }

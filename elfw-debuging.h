@@ -77,7 +77,7 @@ namespace elfw {
 
         template<typename S>
         S& operator<<(S& s, const ResolvedCommand& c) {
-            s << "{[RESOLVED] frame=" << c.frame << ", hash=" << c.hash << " ";
+            s << "{[RESOLVED] frame=" << c.frame << ", hashIdx=" << c.hashIndex << " ";
             c.cmd.match(
                     [&](const cmds::Rectangle& r) { s << r; },
                     [&](const cmds::RoundedRectangle& r) { s << r; },

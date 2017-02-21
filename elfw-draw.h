@@ -101,7 +101,7 @@ namespace elfw {
             Rect<double> frame;
             CommandOp cmd;
 
-            std::size_t hash;
+            std::size_t hashIndex;
         };
 
 

@@ -25,6 +25,14 @@ namespace elfw {
                 }
             }
 
+            template<typename Seq, typename HashConverter>
+            OrderedSet(const Seq& src, HashConverter&& converter) {
+                // Store the indices for the hashes
+                for (size_t i = 0; i < src.size(); ++i) {
+                    hashToIndex.insert({converter(src[i]), i});
+                }
+            }
+
             size_t operator[](const size_t hsh) const {
                 if (!contains(hsh)) return 0xbeefbeef;
                 return hashToIndex.at(hsh);
