@@ -172,58 +172,10 @@ namespace elfw {
 
 
             diffAndPatch(as, bs, a.drawCommands, b.drawCommands, pathA, pathB, patches);
-
-//            Patches inA, inB, reordered, constant;
-//            ordered_set::diff(as, bs, inA, inB, reordered, constant);
-//
-//            appendPatches(
-//                    patches, a, b,
-//
-//                    inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
-//                        return patch::Remove < T > {patch::base(pathA, ai, ae)};
-//                    },
-//
-//                    inB, [&](size_t, size_t bi, auto&&, auto&& be) {
-//                        return patch::Add<T> { patch::base(pathB, bi, be) };
-//                    },
-//
-//                    reordered, [&](size_t ai, size_t bi, auto&& ae, auto&& be) {
-//                        return patch::Reorder<T> { patch::base(pathA, ai, ae), patch::base(pathB, bi, be) };
-//                    }
-//            );
         }
 
         // diff two nodes via hashing
         // --------------------------
-
-//        template<typename T, typename SeqA, typename SeqB>
-//        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches, const patch::DivPath& pathA, const patch::DivPath& pathB) {
-//            using namespace containers;
-//            OrderedSet as(a);
-//            OrderedSet bs(b);
-//
-//            enum Op { Remove, Add, Reorder };
-//
-//            Patches inA, inB, reordered, constant;
-//            ordered_set::diff(as, bs, inA, inB, reordered, constant);
-//
-//            appendPatches(
-//                    patches, a, b,
-//
-//                    inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
-//                        return patch::Remove < T > {patch::base(pathA, ai, ae)};
-//                    },
-//
-//                    inB, [&](size_t, size_t bi, auto&&, auto&& be) {
-//                        return patch::Add<T> { patch::base(pathB, bi, be) };
-//                    },
-//
-//                    reordered, [&](size_t ai, size_t bi, auto&& ae, auto&& be) {
-//                        return patch::Reorder<T> { patch::base(pathA, ai, ae), patch::base(pathB, bi, be) };
-//                    }
-//            );
-//
-//        }
 
         // Diffs two different divs
         void diff(const ResolvedDiv& a, const ResolvedDiv& b,
@@ -240,7 +192,6 @@ namespace elfw {
 
             diffChildren(a, b, hashesA, hashesB, cmdHashesA, cmdHashesB, patches, pathA, pathB);
             diffDrawCmds(a, b, cmdHashesA, cmdHashesB, patches, pathA, pathB);
-//            diffToPatch(a.drawCommands, b.drawCommands, patches, pathA, pathB);
         }
 
     }

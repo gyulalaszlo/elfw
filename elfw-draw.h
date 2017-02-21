@@ -82,6 +82,8 @@ namespace elfw {
                 Stroke stroke;
             };
 
+
+
         }
 
         using CommandOp = mkz::variant<
@@ -97,8 +99,33 @@ namespace elfw {
         };
 
 
+        namespace cmds {
+
+            struct fillIsOpaque_t {
+                // solid fill is opaque if the the alpha is max
+                bool operator()(const fill::Solid& f) const { return f.a == 0xff; }
+                // no fill is not opaque
+                bool operator()(const fill::None& _) const { return false; }
+            };
+
+            // Checks if the command results in an opaque frame
+            struct isOpaque_t {
+
+                bool operator()(const Rectangle& r) const {
+                    return r.fill.match(fillIsOpaque_t{});
+                }
+
+                bool operator()(const RoundedRectangle& r) const { return false; }
+                bool operator()(const Ellipse& r) const { return false; }
+            };
+
+
+        }
+
         struct ResolvedCommand {
+            // The area touched by the command
             Rect<double> frame;
+            // The area where the result of this command is opaque
             CommandOp cmd;
 
             std::size_t hashIndex;

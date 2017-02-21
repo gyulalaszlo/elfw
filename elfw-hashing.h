@@ -114,7 +114,10 @@ namespace elfw {
 
     namespace div_hash {
 
-        // returns the recursive hash
+
+        // Recursively creates the div and command hashes for the tree
+        // and updates the hash indices for both divs and draw commands
+        // Returns the recursive hash.
         std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes) {
             using namespace stdhelpers;
             // store the size of the hashes vector, so we keep our entry

@@ -20,7 +20,7 @@ namespace elfw {
 
         draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command cmd ) {
             // calc the frame before hashing
-            auto frameRect = frame::resolve( cmd.frame, viewRect );
+            auto frameRect = viewRect && frame::resolve( cmd.frame, viewRect );
             // generate the hash here
             stdhelpers::hash_builder cmdHash;
             cmdHash.add(frameRect);
@@ -32,6 +32,8 @@ namespace elfw {
             };
         }
 
+        // Converts a Div and all its children to a ResolvedDiv by applying the view rectangle
+        // to the frames and draw commands.
         ResolvedDiv resolve(Rect<double> viewRect, const Div& div) {
 
             auto frameRect = frame::resolve(div.frame, viewRect);
@@ -65,6 +67,7 @@ namespace elfw {
 
 
 
+        // Converts a Div tree to ResolvedDivs and hashes all data in the tree
         ViewTreeWithHashes convertToResolved(Rect<double> viewRect, const Div& div) {
             auto resolvedDiv = resolve(viewRect, div);
 
