@@ -12,9 +12,21 @@ namespace elfw {
 
 
     namespace patch {
+        // Limit to 16 levels of depth for now
+        using DivPath = std::vector<int>;
+//        using DivPath = int[16];
+
         // DRY
         template <typename T>
-        struct Base { const T* el; const Frame<double>* frame; size_t idx; };
+        struct Base {
+            DivPath path;
+            const T* el;
+            const Frame<double>* frame;
+            size_t idx;
+        };
+
+        template <typename T>
+        Base<T> base( const DivPath& path, size_t idx, const T& t ) { return { path, &t, &(t.frame), idx }; }
 
         // The actual patch operations
         template <typename T> struct Add { Base<T> b; };
@@ -69,8 +81,37 @@ namespace elfw {
                 // Otherwise diff to find out what changed
                 diff(a.childDivs[child.idxA], b.childDivs[child.idxB], patches);
             }
-        };
+        }
 
+
+        // Appending view patches
+        // ----------------------
+
+        //TODO: do we love the "magic" here?
+
+        template<typename T, typename SeqA, typename SeqB>
+        void appendPatches( std::vector<Patch<T>>& patches, SeqA&& a, SeqB&& b) {}
+
+        template<typename T, typename SeqA, typename SeqB, typename Fn, typename... Args>
+        void appendPatches( std::vector<Patch<T>>& patches, SeqA&& a, SeqB&& b,
+                                           const containers::Patches& osPatches, Fn&& fn,
+                                           Args&&... args)
+        {
+            const auto start = patches.size();
+            patches.resize(patches.size() + osPatches.size());
+            std::transform(osPatches.begin(), osPatches.end(), &patches[start], [&](const containers::OrderedSetPatch& p) -> Patch<T> {
+                const auto& ae = a[p.idxA];
+                const auto& be = b[p.idxB];
+                return static_cast<Patch<T>>( fn(p.idxA, p.idxB, ae, be) );
+            });
+
+            // Next group
+            appendPatches(patches, a, b, args...);
+
+        }
+
+        // diff two nodes via hashing
+        // --------------------------
 
         template<typename T, typename SeqA, typename SeqB>
         void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches) {
@@ -82,29 +123,23 @@ namespace elfw {
             Patches inA, inB, reordered, constant;
             diff(as, bs, inA, inB, reordered, constant);
 
-            auto appendViewPatch = [&](const Op op, const Patches& osPatches) {
-                const auto start = patches.size();
-                patches.resize(patches.size() + osPatches.size());
-                std::transform(osPatches.begin(), osPatches.end(), &patches[start], [&](const OrderedSetPatch& p) -> Patch<T> {
-                    const auto& ae = a[p.idxA];
-                    const auto& be = b[p.idxB];
-                    switch (op) {
-                        case Remove:
-                            return patch::Remove<T> {{ &ae, &ae.frame, p.idxA }};
-                        case Add:
-                            return patch::Add<T> {{ &be, &be.frame, p.idxB }};
-                        case Reorder:
-                            return patch::Reorder<T> {{ &ae, &ae.frame, p.idxA }, { &be, &be.frame, p.idxB }};
-                    };
-                    assert(false);
-                });
-            };
+            appendPatches(
+                    patches, a, b,
 
-            appendViewPatch(Remove, inA);
-            appendViewPatch(Add, inB);
-            appendViewPatch(Reorder, reordered);
+                    inA, [](size_t ai, size_t, auto&& ae, auto&&) {
+                        return patch::Remove < T > {patch::base({}, ai, ae)};
+                    },
 
-        };
+                    inB, [](size_t, size_t bi, auto&&, auto&& be) {
+                        return patch::Add<T> { patch::base({}, bi, be) };
+                    },
+
+                    reordered, [](size_t ai, size_t bi, auto&& ae, auto&& be) {
+                        return patch::Reorder<T> { patch::base({}, ai, ae), patch::base({}, bi, be) };
+                    }
+            );
+
+        }
 
     }
 }

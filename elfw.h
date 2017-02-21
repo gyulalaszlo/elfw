@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <map>
-#include "mkzbase/variant.h"
 
 #include "elfw-base.h"
 #include "elfw-draw.h"
