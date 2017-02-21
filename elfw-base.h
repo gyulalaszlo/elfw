@@ -48,4 +48,16 @@ namespace elfw {
         template <typename T> const Frame<T> full = { rect::none<T>, rect::unit<T> };
     }
 
+
+    // Equality
+    // ========
+
+    template <typename T>
+    bool operator==(const Vec2<T>& a, const Vec2<T>& b) { return a.x == b.x && a.y == b.y;}
+
+    template <typename T>
+    bool operator==(const Rect<T>& a, const Rect<T>& b) { return a.pos == b.pos && a.size == b.size;}
+
+    template <typename T>
+    bool operator==(const Frame<T>& a, const Frame<T>& b) { return a.absolute == b.absolute && a.relative == b.relative;}
 }

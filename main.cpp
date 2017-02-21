@@ -46,22 +46,27 @@ namespace {
 
     Div view(Model& model) {
         using namespace elfw::draw;
+        using namespace elfw::draw::cmds;
 
         auto baseRect = [&](){
             return Div{
                     frame::full<double>,
                     {},
                     {
-                            Rectangle{
+                            {
                                     frame::full<double>,
-                                    color::hex(0xff333333),
-                                    draw::None{}
+                                    Rectangle{
+                                            color::hex(0xff333333),
+                                            draw::None{}
+                                    }
                             },
-                            RoundedRectangle{
+                            {
                                     {rect::make<double>(5,5,-5, -5), rect::unit<double>},
-                                    5.0,
-                                    color::hex(0xff222222),
-                                    draw::SolidStroke{ 2.0, color::hex(0x66ffffff) },
+                                    RoundedRectangle{
+                                            5.0,
+                                            color::hex(0xff222222),
+                                            draw::SolidStroke{ 2.0, color::hex(0x66ffffff) }
+                                    }
                             }
                     }
             };
@@ -74,16 +79,19 @@ namespace {
                     frame::full<double>,
                     {},
                     {
-                            Ellipse{
+                            {
+
                                     {
                                             // use absolute for the pluck size
                                             rect::centered<double>(r),
                                             // use the relative for positioning
                                             rect::make<double>(model.ballX, model.ballY, 0, 0)
                                     },
-                                    color::hex(0xff333333),
-                                    draw::None{},
-                            },
+                                    Ellipse{
+                                            color::hex(0xff333333),
+                                            draw::None{},
+                                    },
+                            }
                     }
             };
         };
@@ -100,12 +108,15 @@ namespace {
 }
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
-
     auto m = Model{};
-    Msg msg_ = msg::MouseDown{ 0.0, 1.0 };
-    update( msg_ , m);
-    const auto v = view(m);
-    std::cout << v;
+//    Msg msg_ = msg::MouseDown{ 0.0, 1.0 };
+//    update( msg_ , m);
+    const auto v0 = view(m);
+    std::cout << v0;
+
+    m.ballX = 0.435;
+    m.ballY = 0.23;
+    const auto v1 = view(m);
+    std::cout << v1;
     return 0;
 }
