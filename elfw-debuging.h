@@ -145,20 +145,32 @@ namespace elfw {
     // =============
 
 
+    namespace patch {
+        template<typename S>
+        S& operator<<(S& s, const DivPath& p) {
+            s << "[ ";
+            for(auto& e : p ) {
+                s << e << ", ";
+            }
+            return s<< "]";
+//        return s << "( path=" << p.path << " idx=" << p.idx << ", frame=" << *p.frame << " )\n      -> " << *p.el;
+        }
 
-    template<typename S, typename T>
-    S& operator<<(S& s, const patch::Base<T>& p) {
-        return s << "( idx=" << p.idx << ", frame=" << *p.frame << " )\n      -> " << *p.el;
+        template<typename S, typename T>
+        S& operator<<(S& s, const patch::Base<T>& p) {
+            return s << "( path=" << p.path << " idx=" << p.idx << ", frame=" << *p.frame << " )\n      -> " << *p.el;
+        }
+
+        template<typename S, typename T>
+        S& operator<<(S& s, const Patch<T>& p) {
+            p.match(
+                    [&](const patch::Remove<T>& p) { s << "[REMOVE] " << p.a; },
+                    [&](const patch::Add<T>& p) { s << "[ADD] " << p.b; },
+                    [&](const patch::Reorder<T>& p) { s << "[REORDER]\n    old=" << p.a << "\n    new=" << p.b; }
+            );
+            return s;
+        };
     }
 
-    template<typename S, typename T>
-    S& operator<<(S& s, const Patch<T>& p) {
-        p.match(
-                [&](const patch::Remove<T>& p) { s << "[REMOVE] " << p.a; },
-                [&](const patch::Add<T>& p) { s << "[ADD] " << p.b; },
-                [&](const patch::Reorder<T>& p) { s << "[REORDER]\n    old=" << p.a << "\n    new=" << p.b; }
-        );
-        return s;
-    };
 }
 

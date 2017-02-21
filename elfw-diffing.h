@@ -14,7 +14,13 @@ namespace elfw {
     namespace patch {
         // Limit to 16 levels of depth for now
         using DivPath = std::vector<int>;
-//        using DivPath = int[16];
+
+        // Appends a new index to the end of the path
+        DivPath append(const DivPath& p, int childIdx) {
+            DivPath d(p);
+            d.emplace_back(childIdx);
+            return d;
+        }
 
         // DRY
         template <typename T>
@@ -45,42 +51,39 @@ namespace elfw {
 
     // FWD
     namespace _impl {
-        template<typename T, typename SeqA, typename SeqB>
-        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches);
-
-        void diffChildren( const Div& a, const Div& b, std::vector<CommandPatch>& patches);
+        void diff(const Div& a, const Div& b, std::vector<CommandPatch>& patches, const patch::DivPath& pathB, const patch::DivPath& pathA);
     }
 
 
     // Diffs two different divs
     void diff(const Div& a, const Div& b, std::vector<CommandPatch>& patches) {
-        // if the recursive hash is the same, the subtree should be the same
-        if (recursive_hash(a) == recursive_hash(b)) {
-            return;
-        }
-        _impl::diffChildren(a, b, patches);
-        _impl::diffToPatch(a.drawCommands, b.drawCommands, patches);
+        patch::DivPath ap = {0};
+        patch::DivPath bp = {0};
+        return _impl::diff(a, b, patches, ap, bp);
     }
-
 
 
     namespace _impl {
 
-        void diffChildren(const Div& a, const Div& b, std::vector<CommandPatch>& patches) {
+        void diffChildren(const Div& a, const Div& b, std::vector<CommandPatch>& patches, const patch::DivPath& pathB, const patch::DivPath& pathA) {
             using namespace containers;
             OrderedSet as(a.childDivs), bs(b.childDivs);
 
             Patches inA, inB, reordered, constant;
-            diff(as, bs, inA, inB, reordered, constant);
+            ordered_set::diff(as, bs, inA, inB, reordered, constant);
 
             // check the children that stayed the same
             for (auto& child : constant) {
                 const auto& ac = a.childDivs[child.idxA];
                 const auto& bc = b.childDivs[child.idxB];
 
+                const auto childPathA = patch::append(pathA, (int)child.idxA);
+                const auto childPathB = patch::append(pathB, (int)child.idxB);
                 // Otherwise diff to find out what changed
-                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], patches);
+                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], patches, childPathA, childPathB);
             }
+
+            // TODO: check the reordered ones too
         }
 
 
@@ -114,31 +117,41 @@ namespace elfw {
         // --------------------------
 
         template<typename T, typename SeqA, typename SeqB>
-        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches) {
+        void diffToPatch(SeqA&& a, SeqB&& b, std::vector<Patch<T>>& patches, const patch::DivPath& pathB, const patch::DivPath& pathA) {
             using namespace containers;
             OrderedSet as(a), bs(b);
 
             enum Op { Remove, Add, Reorder };
 
             Patches inA, inB, reordered, constant;
-            diff(as, bs, inA, inB, reordered, constant);
+            ordered_set::diff(as, bs, inA, inB, reordered, constant);
 
             appendPatches(
                     patches, a, b,
 
-                    inA, [](size_t ai, size_t, auto&& ae, auto&&) {
-                        return patch::Remove < T > {patch::base({}, ai, ae)};
+                    inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
+                        return patch::Remove < T > {patch::base(pathA, ai, ae)};
                     },
 
-                    inB, [](size_t, size_t bi, auto&&, auto&& be) {
-                        return patch::Add<T> { patch::base({}, bi, be) };
+                    inB, [&](size_t, size_t bi, auto&&, auto&& be) {
+                        return patch::Add<T> { patch::base(pathB, bi, be) };
                     },
 
-                    reordered, [](size_t ai, size_t bi, auto&& ae, auto&& be) {
-                        return patch::Reorder<T> { patch::base({}, ai, ae), patch::base({}, bi, be) };
+                    reordered, [&](size_t ai, size_t bi, auto&& ae, auto&& be) {
+                        return patch::Reorder<T> { patch::base(pathA, ai, ae), patch::base(pathB, bi, be) };
                     }
             );
 
+        }
+
+        // Diffs two different divs
+        void diff(const Div& a, const Div& b, std::vector<CommandPatch>& patches, const patch::DivPath& pathB, const patch::DivPath& pathA) {
+            // if the recursive hash is the same, the subtree should be the same
+            if (recursive_hash(a) == recursive_hash(b)) {
+                return;
+            }
+            diffChildren(a, b, patches, pathA, pathB);
+            diffToPatch(a.drawCommands, b.drawCommands, patches, pathA, pathB);
         }
 
     }
