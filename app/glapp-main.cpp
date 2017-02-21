@@ -57,7 +57,6 @@ namespace {
         }
 
         ~NVGA() {
-
             nvgDeleteGL3(vg);
 
             printf("Average Frame Time: %.2f ms\n", getGraphAverage(&fps) * 1000.0f);

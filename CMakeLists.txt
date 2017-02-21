@@ -4,7 +4,7 @@ project(MVC_UI_test)
 set(CMAKE_CXX_STANDARD 14)
 
 set(ELFW_FILES elfw.h elfw-draw.h elfw-base.h)
-set(SOURCE_FILES main.cpp )
+set(SOURCE_FILES main.cpp elfw-hashing.h elfw-viewtree.h elfw-orderedset.h elfw-debuging.h elfw-diffing.h)
 add_executable(MVC_UI_test ${SOURCE_FILES} ${ELFW_FILES})
 
 
@@ -43,7 +43,7 @@ add_custom_target(
 )
 
 add_custom_command(
-        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools/elfw-resources ${SHADER_DATA_FILE} shaders/basic.fragmentshader shaders/basic.vertexshader
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools/elfw-resources ${SHADER_DATA_FILE} shaders/basic.frag shaders/basic.vert
         DEPENDS elfw-resources
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/app
         OUTPUT ${SHADER_DATA_FILES}
