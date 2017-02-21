@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <cstdio>
 #include "load_shader.h"
+#include "../tools/elfw-resources.h"
 
 namespace {
 
@@ -13,17 +14,17 @@ namespace {
 
     template <typename Setup, typename Render>
     int with_gl_window(const GlWindowConfig& cfg, Setup&& setup, Render&& render) {
-        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
-
         GLFWwindow* window;
 
         /* Initialize the library */
         if (!glfwInit())
             return -1;
+
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
 
         /* Create a windowed mode window and its OpenGL context */
         window = glfwCreateWindow(cfg.width, cfg.height, cfg.title, NULL, NULL);
@@ -67,6 +68,11 @@ namespace {
 
 int main(void)
 {
+    elfw::ResourceLoader loader("shaders.data");
+
+    auto vs = loader.get("shaders/basic.vertexshader");
+    auto fs = loader.get("shaders/basic.fragmentshader");
+
 
     GLuint VertexArrayID;
     // This will identify our vertex buffer
@@ -99,7 +105,7 @@ int main(void)
 
                 // load the shaders
                 // Create and compile our GLSL program from the shaders
-                programID = glhelpers::LoadShaders( "shaders/basic.vertexshader", "shaders/basic.fragmentshader" );
+                programID = glhelpers::LoadShaders( "basic",  vs.ptr, fs.ptr );
 
             },
             [&](GLFWwindow* window) {

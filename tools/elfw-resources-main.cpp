@@ -49,8 +49,9 @@ namespace {
             }
 
             size_t startIdx = d.binary.size();
-            d.binary.resize( d.binary.size() + size );
+            d.binary.resize( d.binary.size() + size + 1 );
             if (f.read(&d.binary[startIdx], size)) {
+                d.binary[startIdx + size ] = '\0';
                 d.buffers[file] = std::make_pair(startIdx, (size_t)size);
             }
 
@@ -59,17 +60,47 @@ namespace {
     }
 
 
-    std::vector<char> metaToBinary(const Data& data) {
+    template <typename F>
+    std::vector<char> stringBuffer(F&& f) {
         std::stringstream o;
-        for (auto it = data.buffers.begin(); it != data.buffers.end(); ++it) {
-            o << it->first << "\t" << it->second.first << "\t" << it->second.second << "\n";
-        }
-
+        f(o);
 
         auto s = o.str();
         return std::vector<char>(s.begin(), s.end());
     }
 
+    template <typename F>
+    std::vector<char> withEachBufferMeta(const Data& data, F&& f) {
+        return stringBuffer([&](auto& o){
+            for (auto it = data.buffers.begin(); it != data.buffers.end(); ++it) {
+                f(o, it->first, it->second.first, it->second.second);
+            }
+        });
+    }
+
+    std::vector<char> metaToBinary(const Data& data) {
+        return withEachBufferMeta(data, [&](auto& o, std::string name, size_t offset, size_t size) {
+            o << name << "\t" << offset << "\t" << size << "\n";
+        });
+    }
+
+//    std::vector<char> metaToHeader(const Data& data) {
+//        static const auto isValidChar = [](const auto c){
+//              return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-';
+//        };
+//
+//        const auto names = "";
+//        return stringBuffer([&](auto& o){
+//            o << "enum {\n"
+//            for (auto it = data.buffers.begin(); it != data.buffers.end(); ++it) {
+//
+//                auto f = std::string(it->first.c_str());
+//                std::replace_if( f.begin(), f.end(), isValidChar, '_');
+//                o << "  " << f << ",\n";
+//            }
+//            o << "}; // enum\n"
+//        });
+//    }
 
     // Help
     void usage(const char* argv0) {

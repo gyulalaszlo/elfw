@@ -29,13 +29,22 @@ namespace elfw {
                 exit(-11);
             }
 
-
             for (auto v : meta) {
-                printf("asfasf: '%s' : %zd %zd\n", v.first.c_str(), v.second.first, v.second.second);
+                printf("[Resources] '%s' : %zd %zd\n", v.first.c_str(), v.second.first, v.second.second);
             }
 
         }
         ~ResourceLoader() {}
+
+        Data get(const std::string& path) {
+            if (meta.count(path) == 0) {
+                fprintf(stderr, "Cannot find resource with path: '%s'", path.c_str());
+                exit(-12);
+            }
+
+            auto m = meta[path];
+            return { &data[m.first], m.second };
+        }
 
     private:
         using MetaMap = std::unordered_map<std::string, std::pair<size_t, size_t>>;
@@ -46,11 +55,13 @@ namespace elfw {
                 return false;
             }
 
-            f.seekg(f.end);
+            f.seekg(0, f.end);
             auto s = (size_t)f.tellg();
-            f.seekg(f.beg);
+            f.seekg(0, f.beg);
             data.resize(s);
             f.read(data.data(), data.size());
+
+            printf("[Resource] Read %zd bytes from binary '%s'", data.size(), file.c_str());
 
             return true;
         }

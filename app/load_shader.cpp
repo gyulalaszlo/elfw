@@ -11,43 +11,43 @@
 
 namespace glhelpers {
 
-    GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
+    GLuint LoadShaders(const char* logName, const char* vertexShaderCode, const char* fragmentShaderCode){
 
         // Create the shaders
         GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
         GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
         // Read the Vertex Shader code from the file
-        std::string VertexShaderCode;
-        std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
-        if(VertexShaderStream.is_open()){
-            std::string Line = "";
-            while(getline(VertexShaderStream, Line))
-                VertexShaderCode += "\n" + Line;
-            VertexShaderStream.close();
-        }else{
-            printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-            getchar();
-            return 0;
-        }
+//        std::string VertexShaderCode(vertexShaderCode);
+//        std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
+//        if(VertexShaderStream.is_open()){
+//            std::string Line = "";
+//            while(getline(VertexShaderStream, Line))
+//                VertexShaderCode += "\n" + Line;
+//            VertexShaderStream.close();
+//        }else{
+//            printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
+//            getchar();
+//            return 0;
+//        }
 
         // Read the Fragment Shader code from the file
-        std::string FragmentShaderCode;
-        std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
-        if(FragmentShaderStream.is_open()){
-            std::string Line = "";
-            while(getline(FragmentShaderStream, Line))
-                FragmentShaderCode += "\n" + Line;
-            FragmentShaderStream.close();
-        }
+//        std::string FragmentShaderCode(fragmentShaderCode);
+//        std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
+//        if(FragmentShaderStream.is_open()){
+//            std::string Line = "";
+//            while(getline(FragmentShaderStream, Line))
+//                FragmentShaderCode += "\n" + Line;
+//            FragmentShaderStream.close();
+//        }
 
         GLint Result = GL_FALSE;
         int InfoLogLength;
 
 
         // Compile Vertex Shader
-        printf("Compiling shader : %s\n", vertex_file_path);
-        char const * VertexSourcePointer = VertexShaderCode.c_str();
+        printf("Compiling vertex shader : %s\n", logName);
+        char const * VertexSourcePointer = vertexShaderCode;
         glShaderSource(VertexShaderID, 1, &VertexSourcePointer , NULL);
         glCompileShader(VertexShaderID);
 
@@ -57,14 +57,14 @@ namespace glhelpers {
         if ( InfoLogLength > 0 ){
             std::vector<char> VertexShaderErrorMessage(InfoLogLength+1);
             glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-            printf("%s\n", &VertexShaderErrorMessage[0]);
+            fprintf(stderr, "%s\n", &VertexShaderErrorMessage[0]);
         }
 
 
 
         // Compile Fragment Shader
-        printf("Compiling shader : %s\n", fragment_file_path);
-        char const * FragmentSourcePointer = FragmentShaderCode.c_str();
+        printf("Compiling fragment shader : %s\n", logName);
+        char const * FragmentSourcePointer = fragmentShaderCode;
         glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer , NULL);
         glCompileShader(FragmentShaderID);
 
@@ -74,7 +74,8 @@ namespace glhelpers {
         if ( InfoLogLength > 0 ){
             std::vector<char> FragmentShaderErrorMessage(InfoLogLength+1);
             glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-            printf("%s\n", &FragmentShaderErrorMessage[0]);
+            fprintf(stderr, "%s\n", &FragmentShaderErrorMessage[0]);
+            fprintf(stderr, "CODE: %s\n", fragmentShaderCode);
         }
 
 

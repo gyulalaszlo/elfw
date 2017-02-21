@@ -14,7 +14,6 @@ add_executable(MVC_UI_test ${SOURCE_FILES} ${ELFW_FILES})
 add_subdirectory(tools)
 
 
-
 # ==========
 
 find_package(glfw3 REQUIRED)
@@ -30,3 +29,24 @@ target_include_directories(glapp
 target_link_libraries(glapp ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} glfw)
 
 include_directories(mkzbase/variant/include)
+
+#========================
+
+set(SHADER_DATA_FILE ${CMAKE_CURRENT_BINARY_DIR}/shaders.data )
+set(SHADER_DATA_FILES ${SHADER_DATA_FILE} ${SHADER_DATA_FILE}.meta)
+
+
+add_custom_target(
+        generate-shader-data
+        DEPENDS ${SHADER_DATA_FILES}
+)
+
+add_custom_command(
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools/elfw-resources ${SHADER_DATA_FILE} shaders/basic.fragmentshader shaders/basic.vertexshader
+        DEPENDS elfw-resources
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/app
+        OUTPUT ${SHADER_DATA_FILES}
+)
+
+add_dependencies(glapp generate-shader-data)
+
