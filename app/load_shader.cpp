@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <GL/glew.h>
 #include "load_shader.h"
 
 

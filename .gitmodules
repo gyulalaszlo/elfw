@@ -1,3 +1,6 @@
 [submodule "mkzbase"]
 	path = mkzbase
 	url = git@github.com:gyulalaszlo/mkzbase.git
+[submodule "vendor/nanovg"]
+	path = vendor/nanovg
+	url = https://github.com/memononen/nanovg.git

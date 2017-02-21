@@ -12,6 +12,7 @@ add_executable(MVC_UI_test ${SOURCE_FILES} ${ELFW_FILES})
 
 
 add_subdirectory(tools)
+add_subdirectory(vendor)
 
 
 # ==========
@@ -26,7 +27,7 @@ add_executable(glapp ${GLAPP_FILES} ${ELFW_FILES})
 target_include_directories(glapp
         PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${GLEW_INCLUDE_DIRS})
 
-target_link_libraries(glapp ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} glfw)
+target_link_libraries(glapp ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} glfw nanovg)
 
 include_directories(mkzbase/variant/include)
 
