@@ -4,7 +4,7 @@ project(MVC_UI_test)
 set(CMAKE_CXX_STANDARD 14)
 
 set(ELFW_FILES elfw.h elfw-draw.h elfw-base.h)
-set(SOURCE_FILES main.cpp elfw-hashing.h elfw-viewtree.h elfw-orderedset.h elfw-debuging.h elfw-diffing.h)
+set(SOURCE_FILES main.cpp elfw-hashing.h elfw-viewtree.h elfw-orderedset.h elfw-debuging.h elfw-diffing.h elfw-viewtree-resolve.h)
 add_executable(MVC_UI_test ${SOURCE_FILES} ${ELFW_FILES})
 
 

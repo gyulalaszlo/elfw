@@ -147,9 +147,9 @@ namespace elfw {
         // Diffs two different divs
         void diff(const Div& a, const Div& b, std::vector<CommandPatch>& patches, const patch::DivPath& pathB, const patch::DivPath& pathA) {
             // if the recursive hash is the same, the subtree should be the same
-            if (recursive_hash(a) == recursive_hash(b)) {
-                return;
-            }
+//            if (recursive_hash(a) == recursive_hash(b)) {
+//                return;
+//            }
             diffChildren(a, b, patches, pathA, pathB);
             diffToPatch(a.drawCommands, b.drawCommands, patches, pathA, pathB);
         }

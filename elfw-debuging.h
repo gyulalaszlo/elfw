@@ -75,6 +75,17 @@ namespace elfw {
             return s;
         }
 
+        template<typename S>
+        S& operator<<(S& s, const ResolvedCommand& c) {
+            s << "{[RESOLVED] frame=" << c.frame << ", hash=" << c.hash << " ";
+            c.cmd.match(
+                    [&](const cmds::Rectangle& r) { s << r; },
+                    [&](const cmds::RoundedRectangle& r) { s << r; },
+                    [&](const cmds::Ellipse& r) { s << r; }
+            );
+            s << " }\n";
+            return s;
+        }
 
         // COMMANDS DEBUG
         // ==============
@@ -141,6 +152,36 @@ namespace elfw {
     }
 
 
+    template<typename S>
+    void debug(S& s, const ResolvedDiv& div, int indent = 0) {
+
+        auto doIndent = [&]() {
+            for (int i = 0; i < indent * 4; ++i)
+                s << " ";
+        };
+
+        s << "\n";
+        doIndent();
+        s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" <<  div.hashIndex << " frame=" << div.frame << "\n";
+
+        indent += 1;
+
+        for (auto& cmd : div.drawCommands) {
+            using namespace draw;
+            doIndent();
+            s << cmd << "\n";
+        }
+
+        for (auto& child : div.childDivs) {
+            debug(s, child, indent + 1);
+        }
+    }
+
+    template<typename S>
+    S& operator<<(S& s, const ResolvedDiv& d) {
+        debug(s, d, 0);
+        return s;
+    }
     // DIFFING DEBUG
     // =============
 

@@ -84,15 +84,24 @@ namespace elfw {
 
         }
 
+        using CommandOp = mkz::variant<
+                cmds::Rectangle,
+                cmds::RoundedRectangle,
+                cmds::Ellipse
+        >;
 
         // Add a frame to all commands
         struct Command {
             Frame<double> frame;
-            mkz::variant<
-                    cmds::Rectangle,
-                    cmds::RoundedRectangle,
-                    cmds::Ellipse
-            > cmd;
+            CommandOp cmd;
+        };
+
+
+        struct ResolvedCommand {
+            Rect<double> frame;
+            CommandOp cmd;
+
+            std::size_t hash;
         };
 
 

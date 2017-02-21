@@ -114,7 +114,7 @@ namespace {
 
         return {
                 "root",
-                { {{0,0}, {200, 100}}  },
+                { {{0,0}, {0, -100}}, {{0,0}, {1,1}}  },
                 {
                         baseRect(),
                         pluck(),
@@ -156,6 +156,13 @@ int main() {
 
     std::vector<elfw::CommandPatch> cmdDiff = {};
     elfw::diff(v0, v1, cmdDiff);
+
+
+    // resolve the tree 1
+    auto v0resolved = elfw::resolve::resolve(Rect<double>{{100, 200}, {640, 480}}, v0);
+
+    std::cout << v0resolved << "\n";
+
     for (auto& p : cmdDiff) {
         std::cout << ":: " << p << "\n";
     }

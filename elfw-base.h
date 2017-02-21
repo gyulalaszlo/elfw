@@ -46,6 +46,23 @@ namespace elfw {
 
         // A frame covering the entire area
         template <typename T> const Frame<T> full = { rect::none<T>, rect::unit<T> };
+
+
+        template <typename T>
+        const Rect<T> resolve( const Frame<T>& f, const Rect<T>& viewRect ) {
+            T x = 0, y = 0, w = 0, h = 0;
+
+            x = f.absolute.pos.x + f.relative.pos.x * viewRect.size.x;
+            y = f.absolute.pos.y + f.relative.pos.y * viewRect.size.y;
+
+            w = f.absolute.size.x + f.relative.size.x * viewRect.size.x;
+            h = f.absolute.size.y + f.relative.size.y * viewRect.size.y;
+
+            // offset by the viewRect origin
+            x += viewRect.pos.x;
+            y += viewRect.pos.y;
+            return {{x, y}, {w, h}};
+        }
     }
 
 
