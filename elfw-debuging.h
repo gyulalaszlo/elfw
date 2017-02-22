@@ -163,7 +163,7 @@ namespace elfw {
         s << "\n";
         doIndent();
         s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" << div.hashIndex << " frame=" << div.frame
-          << "  drawStartIdx=" << div.drawCommandsStart << "  drawLen=" << div.drawCommandsLen << " \n";
+          << "  drawStartIdx=" << div.drawCommands.start << "  drawLen=" << div.drawCommands.size() << " \n";
 
         indent += 1;
 

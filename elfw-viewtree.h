@@ -3,6 +3,8 @@
 #include "elfw-draw.h"
 #include "elfw-base.h"
 
+#include "mkzbase/index_slice.h"
+
 namespace elfw {
 
     // Represents a box wrapping relative coordinates
@@ -22,8 +24,7 @@ namespace elfw {
 
         std::vector<ResolvedDiv> childDivs;
         // position of the first and last draw command in the draw command list
-        std::size_t drawCommandsStart;
-        std::size_t drawCommandsLen;
+        mkz::index_slice<draw::ResolvedCommand> drawCommands;
 
         // index of the hashes in the resolved div hash list
         std::size_t hashIndex;

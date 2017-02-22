@@ -138,9 +138,11 @@ namespace elfw {
             // command hashes
             // ==============
 
-            auto drawCommands = mkz::make_slice( &commandsList[div.drawCommandsStart], div.drawCommandsLen );
+//            auto drawCommands = mkz::make_slice( &commandsList[div.drawCommandsStart], div.drawCommandsLen );
+            auto drawCommands = mkz::to_slice( div.drawCommands, commandsList );
 
-            hash_builder commandsHash(div.drawCommandsLen);
+//            hash_builder commandsHash(div.drawCommandsLen);
+            hash_builder commandsHash(div.drawCommands.size());
             // calculate the draw commands hash
             for (auto& c : drawCommands) {
 

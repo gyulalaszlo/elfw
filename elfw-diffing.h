@@ -209,8 +209,10 @@ namespace elfw {
                           const patch::DivPath& pathA, const patch::DivPath& pathB) {
             using namespace containers;
             using T = draw::ResolvedCommand;
-            auto adc = mkz::make_slice( commandListA.data() + a.drawCommandsLen, a.drawCommandsLen );
-            auto bdc = mkz::make_slice( commandListB.data() + b.drawCommandsLen, b.drawCommandsLen );
+            auto adc = mkz::to_slice( a.drawCommands, commandListA);
+            auto bdc = mkz::to_slice( b.drawCommands, commandListB);
+//            auto adc = mkz::make_slice( commandListA.data() + a.drawCommandsLen, a.drawCommandsLen );
+//            auto bdc = mkz::make_slice( commandListB.data() + b.drawCommandsLen, b.drawCommandsLen );
 
             OrderedSet as(adc, [&](const draw::ResolvedCommand& c){ return cmdHashesA[c.hashIndex]; });
             OrderedSet bs(bdc, [&](const draw::ResolvedCommand& c){ return cmdHashesB[c.hashIndex]; });

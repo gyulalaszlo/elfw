@@ -47,6 +47,7 @@ namespace elfw {
             return {c, f};
         };
 
+
     }
 
 
@@ -102,10 +103,13 @@ namespace elfw {
                     frameRect,
                     // Alloc the children vector
                     std::vector<ResolvedDiv>(div.childDivs.size()),
-                    // Alloc the draw command vector
-                    drawCommandsStartIdx,
-                    div.drawCommands.size(),
-                    0
+                    // The draw commands index_slice
+                    {
+                            drawCommandsStartIdx,
+                            div.drawCommands.size(),
+                    },
+                    // The hash for later
+                    0,
             };
 
 
