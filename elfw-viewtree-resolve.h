@@ -20,7 +20,7 @@ namespace elfw {
 
         draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command cmd ) {
             // calc the frame before hashing
-            auto frameRect = viewRect && frame::resolve( cmd.frame, viewRect );
+            auto frameRect = frame::resolve( cmd.frame, viewRect );
             // generate the hash here
             stdhelpers::hash_builder cmdHash;
             cmdHash.add(frameRect);

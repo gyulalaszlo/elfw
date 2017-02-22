@@ -3,6 +3,7 @@
 #include "mkzbase/variant.h"
 
 #include "elfw.h"
+#include "elfw-culling.h"
 
 namespace {
 
@@ -78,11 +79,21 @@ namespace {
                                             model.mouseState.match(
                                                     [](const std::nullptr_t& _) -> draw::Stroke { return stroke::none(); },
                                                     [](const MouseDragged& m) -> draw::Stroke {
-                                                        return stroke::Solid{ 4.0, color::hex(0x66ffffff) };
+                                                        return stroke::none();
+//                                                        return stroke::Solid{ 4.0, color::hex(0x66ffffff) };
                                                     }
                                             )
                                     }
-                            }
+
+                            },
+                            {
+                                    {{{-2, 0}, {4, 0}}, {{model.ballX, 0}, {0, 1}}},
+                                    Rectangle{color::hex(0xff555555), stroke::None{}}
+                            },
+//                            {
+//                                    {{{0, -2}, {0, 4}}, {{0, model.ballY}, {1, 0}}},
+//                                    Rectangle{color::hex(0xff555555), stroke::None{}}
+//                            },
                     }
             };
         };
@@ -92,17 +103,16 @@ namespace {
             const auto r = 8;
             return Div{
                     "pluck",
-                    frame::full<double>,
+                    {
+                            // use absolute for the pluck size
+                            rect::centered<double>(r),
+                            // use the relative for positioning
+                            rect::make<double>(model.ballX, model.ballY, 0, 0)
+                    },
                     {},
                     {
                             {
-
-                                    {
-                                            // use absolute for the pluck size
-                                            rect::centered<double>(r),
-                                            // use the relative for positioning
-                                            rect::make<double>(model.ballX, model.ballY, 0, 0)
-                                    },
+                                    frame::full<double>,
                                     Ellipse{
                                             color::hex(0xff333333),
                                             stroke::none(),
@@ -118,13 +128,13 @@ namespace {
                 {
                         baseRect(),
                         pluck(),
-                        Div {
-                                "test", frame::full<double>,
-                                {},
-                                {
-                                        { frame::full<double>, Ellipse { color::hex(0xff987654), stroke::none() }}
-                                }
-                        }
+//                        Div {
+//                                "test", frame::full<double>,
+//                                {},
+//                                {
+//                                        { frame::full<double>, Ellipse { color::hex(0xff987654), stroke::none() }}
+//                                }
+//                        }
                 },
                 {
                         {
@@ -164,10 +174,27 @@ int main() {
     std::cout << v0resolved.root << "\n\n";
     std::cout << v1resolved.root << "\n\n";
 
+    std::cout << "=== Get diff ====\n\n";
     std::vector<elfw::CommandPatch> cmdDiff = {};
-    elfw::diff(v0resolved, v1resolved, cmdDiff);
+    std::vector<elfw::DivPatch> divDiff = {};
+    elfw::diff(v0resolved, v1resolved, cmdDiff, divDiff);
     for (auto& p : cmdDiff) {
         std::cout << ":: " << p << "\n";
     }
+
+    std::cout << "=== DIV ====\n\n";
+    for (auto& p : divDiff) {
+        std::cout << "  Div:: " << p << "\n";
+    }
+    std::cout << "=== Get changed rects changes ====\n\n";
+    std::vector<Rect<double>> changedRects = {};
+    elfw::culling::getChangedRectangles( cmdDiff, changedRects );
+
+    std::cout << "=== Rect changes ====\n\n";
+    for (auto& r : changedRects) {
+        std::cout << " == Changed rect:" << r << "\n";
+    }
+
+
     return 0;
 }

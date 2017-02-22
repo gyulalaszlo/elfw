@@ -207,7 +207,8 @@ namespace elfw {
             p.match(
                     [&](const patch::Remove<T>& p) { s << "[REMOVE] " << p.a; },
                     [&](const patch::Add<T>& p) { s << "[ADD] " << p.b; },
-                    [&](const patch::Reorder<T>& p) { s << "[REORDER]\n    old=" << p.a << "\n    new=" << p.b; }
+                    [&](const patch::Reorder<T>& p) { s << "[REORDER]\n    old=" << p.a << "\n    new=" << p.b; },
+                    [&](const patch::UpdateProps<T>& p) { s << "[UPDATE]\n    old=" << p.a << "\n    new=" << p.b; }
             );
             return s;
         };

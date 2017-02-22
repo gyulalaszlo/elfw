@@ -102,8 +102,12 @@ namespace elfw {
     struct DivHash {
         // the hashes to prevent re-hashing
         std::size_t headerHash;
-        std::size_t drawCommandsHash;
-        std::size_t childDivsHash;
+        // The hash of any non-key property (like frame)
+        // useful for checking if the props have changed
+        // and the input handling needs to be updated in accordance
+        std::size_t propsHash;
+//        std::size_t drawCommandsHash;
+//        std::size_t childDivsHash;
 
         std::size_t recursiveHash;
     };
@@ -126,8 +130,9 @@ namespace elfw {
             hashes.push_back({});
             // get the header hash
             hash_builder headerHash;
+            hash_builder propsHash;
             headerHash.add(std::string(div.key));
-            headerHash.add(div.frame);
+            propsHash.add(div.frame);
 
             // command hashes
             // ==============
@@ -160,8 +165,9 @@ namespace elfw {
             // update the hash data
             hashes[hashIdx] = {
                     headerHash.get(),
-                    commandsHash.get(),
-                    childDivsHash.get(),
+                    propsHash.get(),
+//                    commandsHash.get(),
+//                    childDivsHash.get(),
                     recursiveHash.get(),
             };
 
