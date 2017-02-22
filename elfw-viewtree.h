@@ -28,6 +28,7 @@ namespace elfw {
 
         // index of the hashes in the resolved div hash list
         std::size_t hashIndex;
+        mkz::index_slice<ResolvedDiv> children;
     };
 
 
