@@ -132,6 +132,7 @@ namespace elfw {
         };
 
 
+        using ResolvedCommandList = std::vector<ResolvedCommand>;
     }
 
 

@@ -57,7 +57,7 @@ namespace elfw {
 
 
         template<typename T>
-        void combineOverlaps(std::vector<Rect<T>>& seq) {
+        inline void combineOverlaps(std::vector<Rect<T>>& seq) {
 
             int indexToDelete = -1;
             do {
@@ -81,6 +81,15 @@ namespace elfw {
                 });
 
             } while (indexToDelete != -1);
+        }
+
+
+        // Draw commands
+        // =============
+
+        template <typename RectSeq>
+        inline void getDrawCommandsFor( const RectSeq& changedRects ) {
+            changedRects;
         }
 
     }

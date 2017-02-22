@@ -9,10 +9,53 @@
 
 namespace elfw {
 
+    namespace lazy {
+
+        template <typename Container, typename Fn>
+        struct MapContainer {
+            const Container& c;
+            Fn fn;
+
+            using value_type = typename Container::value_type;
+            using CIt = typename Container::const_iterator;
+            using T = typename Container::value_type;
+
+
+            struct const_iterator {
+                const MapContainer* mc;
+                CIt it;
+
+                T operator*() const {
+                    return mc->fn(*it);
+                }
+
+                bool operator==(const const_iterator& other) const {
+                    return it == other.it;
+                }
+            };
+
+            const_iterator begin() const noexcept { return const_iterator{ this, c.begin()}; }
+            const_iterator end() const noexcept { return const_iterator{ this, c.end()}; }
+
+//            friend T* end(slice<T>& l) noexcept { return l.values + l.count; }
+
+        };
+
+
+        template <typename Container, typename Fn>
+        MapContainer<Container, Fn> lazyMap(const Container& c, Fn&& f) {
+            return {c, f};
+        };
+
+    }
+
+
     struct ViewTreeWithHashes {
         ResolvedDiv root;
         DivHashVector hashes;
         CommandHashVector cmdHashes;
+
+        draw::ResolvedCommandList drawCommands;
     };
 
 
@@ -34,11 +77,15 @@ namespace elfw {
 
         // Converts a Div and all its children to a ResolvedDiv by applying the view rectangle
         // to the frames and draw commands.
-        ResolvedDiv resolve(Rect<double> viewRect, const Div& div) {
+        ResolvedDiv resolve(Rect<double> viewRect, const Div& div, draw::ResolvedCommandList& commandList) {
 
             auto frameRect = frame::resolve(div.frame, viewRect);
             const auto& drawCmds = div.drawCommands;
             const auto& childDivs = div.childDivs;
+
+            // Store the first draw command index
+            const size_t drawCommandsStartIdx = commandList.size();
+            const size_t drawCommandsEndIdx = drawCommandsStartIdx + div.drawCommands.size();
 
             ResolvedDiv resolvedDiv = {
                     div.key,
@@ -46,9 +93,23 @@ namespace elfw {
                     // Alloc the children vector
                     std::vector<ResolvedDiv>(div.childDivs.size()),
                     // Alloc the draw command vector
-                    std::vector<draw::ResolvedCommand>(div.drawCommands.size()),
+                    drawCommandsStartIdx,
+                    drawCommandsEndIdx,
+//                    std::vector<draw::ResolvedCommand>(div.drawCommands.size()),
                     0
             };
+
+
+            // write the resolved commands
+            std::transform(
+                    div.drawCommands.begin(),
+                    div.drawCommands.end(),
+                    std::inserter(commandList, commandList.end()),
+                    [&](auto&& c) {
+                        return resolveCommand(frameRect, c);
+                    }
+            );
+
 
             // write the resolved commands
             std::transform( drawCmds.begin(), drawCmds.end(), resolvedDiv.drawCommands.begin(), [&](auto&& c){
@@ -58,7 +119,7 @@ namespace elfw {
 
             // write the resolved chidren
             std::transform( childDivs.begin(), childDivs.end(), resolvedDiv.childDivs.begin(), [&](auto&& c){
-                return std::move(resolve(frameRect, c));
+                return std::move(resolve(frameRect, c, commandList));
             });
 
             return resolvedDiv;
@@ -69,13 +130,14 @@ namespace elfw {
 
         // Converts a Div tree to ResolvedDivs and hashes all data in the tree
         ViewTreeWithHashes convertToResolved(Rect<double> viewRect, const Div& div) {
-            auto resolvedDiv = resolve(viewRect, div);
+            auto commandList = draw::ResolvedCommandList{};
+            auto resolvedDiv = resolve(viewRect, div, commandList);
 
             auto hashes = DivHashVector{};
             auto cmdHashes = CommandHashVector{};
             div_hash::update(resolvedDiv, hashes, cmdHashes);
 
-            return { std::move(resolvedDiv), std::move(hashes), std::move(cmdHashes) };
+            return { std::move(resolvedDiv), std::move(hashes), std::move(cmdHashes), std::move(commandList) };
         }
 
 

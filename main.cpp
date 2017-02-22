@@ -171,12 +171,17 @@ int main() {
     auto v0resolved = elfw::resolve::convertToResolved(viewRect, v0);
     auto v1resolved = elfw::resolve::convertToResolved(viewRect, v1);
 
-    std::cout << v0resolved.root << "\n\n";
-    std::cout << v1resolved.root << "\n\n";
+//    std::cout << v0resolved.root << "\n\n";
+//    std::cout << v1resolved.root << "\n\n";
+
+    for (auto& p : v1resolved.drawCommands) {
+        std::cout << " []----> " << p << "\n";
+    }
 
     std::cout << "=== Get diff ====\n\n";
     std::vector<elfw::CommandPatch> cmdDiff = {};
     std::vector<elfw::DivPatch> divDiff = {};
+
     elfw::diff(v0resolved, v1resolved, cmdDiff, divDiff);
     for (auto& p : cmdDiff) {
         std::cout << ":: " << p << "\n";
@@ -186,6 +191,7 @@ int main() {
     for (auto& p : divDiff) {
         std::cout << "  Div:: " << p << "\n";
     }
+
     std::cout << "=== Get changed rects changes ====\n\n";
     std::vector<Rect<double>> changedRects = {};
     elfw::culling::getChangedRectangles( cmdDiff, changedRects );

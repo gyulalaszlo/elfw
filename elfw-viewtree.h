@@ -21,15 +21,13 @@ namespace elfw {
         Rect<double> frame;
 
         std::vector<ResolvedDiv> childDivs;
-        std::vector<draw::ResolvedCommand> drawCommands;
+        // position of the first and last draw command in the draw command list
+        std::size_t drawCommandsStart;
+        std::size_t drawCommandsEnd;
+//        std::vector<draw::ResolvedCommand> drawCommands;
 
         // index of the hashes in the resolved div hash list
         std::size_t hashIndex;
-//        // the hashes to prevent re-hashing
-//        std::size_t hash;
-//        std::size_t headerHash;
-//        std::size_t childDivsHash;
-//        std::size_t drawCommandsHash;
     };
 
 
