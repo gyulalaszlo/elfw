@@ -120,17 +120,18 @@ namespace {
 
         return {
                 "root",
-                { {{0,0}, {0, -100}}, {{0,0}, {1,1}}  },
+                { {{0,64}, {0, -164}}, {{0,0}, {1,1}}  },
                 {
-                        baseRect(),
-                        pluck(),
-//                        Div {
-//                                "test", frame::full<double>,
-//                                {},
-//                                {
-//                                        { frame::full<double>, Ellipse { color::hex(0xff987654), stroke::none() }}
-//                                }
-//                        }
+                        Div {
+                                "test",
+                                { rect::centered(-5.0), {{0,0}, {1,1}}  },
+                                {
+                                        baseRect(),
+                                        pluck(),
+                                },
+                                {
+                                }
+                        }
                 },
                 {
                         {
@@ -189,14 +190,30 @@ int main() {
         std::cout << "  Div:: " << p << "\n";
     }
 
-    std::cout << "=== Rect changes ====\n\n";
     std::vector<Rect<double>> changedRects = {};
     elfw::culling::getChangedRectangles( cmdDiff, changedRects );
 
+    std::cout << "=== Rect changes ====\n\n";
     for (auto& r : changedRects) {
         std::cout << " == Changed rect:" << r << "\n";
     }
 
+    elfw::draw::ResolvedCommandList cmds = {};
+    std::vector<size_t> rectIndices = {};
+    elfw::culling::getDrawCommandsFor( v1resolved.drawCommands, changedRects, cmds, rectIndices );
+
+    std::cout << "=== Commands to issue ====" << cmds.size() << "\n\n";
+    size_t j = 0;
+    for (size_t i = 0; i < changedRects.size(); ++i) {
+        const size_t lastWithThisRect = (i == changedRects.size() - 1) ? cmds.size() : rectIndices[i + 1];
+        std::cout << " -- with rect : " << changedRects[i] << " --\n";
+        for (;j < lastWithThisRect; ++j) {
+            std::cout << " i=" << i << " j = " << j << "  last=" << lastWithThisRect;
+
+            std::cout << " --> DRAW: :" << cmds[j];
+
+        }
+    }
 
     return 0;
 }

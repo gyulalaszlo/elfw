@@ -105,15 +105,9 @@ namespace elfw {
                     // Alloc the draw command vector
                     drawCommandsStartIdx,
                     div.drawCommands.size(),
-//                    std::vector<draw::ResolvedCommand>(div.drawCommands.size()),
                     0
             };
 
-
-//            // write the resolved commands
-//            std::transform( drawCmds.begin(), drawCmds.end(), resolvedDiv.drawCommands.begin(), [&](auto&& c){
-//                return resolveCommand(frameRect, c);
-//            });
 
 
             // write the resolved chidren

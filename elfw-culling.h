@@ -1,7 +1,10 @@
 #pragma once
 
-
 #include <set>
+#include <vector>
+
+#include "elfw-base.h"
+#include "elfw-draw.h"
 #include "elfw-diffing.h"
 
 namespace elfw {
@@ -18,13 +21,12 @@ namespace elfw {
         }
     }
 
-
     namespace culling {
 
-        template<typename T> void combineOverlaps(std::vector<Rect<T>>& seq);
+        template<typename T> void combineOverlaps(std::vector<elfw::Rect<T>>& seq);
 
         template <typename T>
-        inline void getChangedRectangles(const std::vector<CommandPatch>& cmdDiffs, std::vector<Rect<T>>& changedRects )
+        inline void getChangedRectangles(const std::vector<CommandPatch>& cmdDiffs, std::vector<elfw::Rect<T>>& changedRects )
         {
             using PatchT = draw::ResolvedCommand;
             std::vector<Rect<T>> cmdRects;
@@ -57,7 +59,7 @@ namespace elfw {
 
 
         template<typename T>
-        inline void combineOverlaps(std::vector<Rect<T>>& seq) {
+        inline void combineOverlaps(std::vector<elfw::Rect<T>>& seq) {
 
             int indexToDelete = -1;
             do {
@@ -88,8 +90,26 @@ namespace elfw {
         // =============
 
         template <typename RectSeq>
-        inline void getDrawCommandsFor( const RectSeq& changedRects ) {
-            changedRects;
+        inline void getDrawCommandsFor(const draw::ResolvedCommandList& cmdList, const RectSeq& changedRects,
+                                       draw::ResolvedCommandList& cmdListOut,
+                                       // for each rectangle in changedRects, this list tells the start
+                                       // index for that rectangles draw commands in the output list
+                                       std::vector<size_t>& rectIndicesInCmdList )
+        {
+            // make sure the indices map to the rects
+            rectIndicesInCmdList.clear();
+
+            for (auto changedRect : changedRects) {
+                // store the current index
+                rectIndicesInCmdList.emplace_back( cmdListOut.size() );
+                // check each command
+                for (auto& cmd : cmdList) {
+                    if (rect::intersects(cmd.frame, changedRect)) {
+                        // Add the command then check the next command
+                        cmdListOut.emplace_back(cmd);
+                    }
+                }
+            }
         }
 
     }
