@@ -162,15 +162,10 @@ namespace elfw {
 
         s << "\n";
         doIndent();
-        s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" <<  div.hashIndex << " frame=" << div.frame << "\n";
+        s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" << div.hashIndex << " frame=" << div.frame
+          << "  drawStartIdx=" << div.drawCommandsStart << "  drawLen=" << div.drawCommandsLen << " \n";
 
         indent += 1;
-
-        for (auto& cmd : div.drawCommands) {
-            using namespace draw;
-            doIndent();
-            s << cmd << "\n";
-        }
 
         for (auto& child : div.childDivs) {
             debug(s, child, indent + 1);
@@ -194,7 +189,6 @@ namespace elfw {
                 s << e << ", ";
             }
             return s<< "]";
-//        return s << "( path=" << p.path << " idx=" << p.idx << ", frame=" << *p.frame << " )\n      -> " << *p.el;
         }
 
         template<typename S, typename T>

@@ -61,6 +61,8 @@ namespace elfw {
                   const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
                   std::vector<CommandPatch>& patches,
                   std::vector<DivPatch>& divPatches,
+                  const std::vector<draw::ResolvedCommand>& commandListA,
+                  const std::vector<draw::ResolvedCommand>& commandListB,
                   const patch::DivPath& pathA, const patch::DivPath& pathB);
     }
 
@@ -71,7 +73,7 @@ namespace elfw {
               std::vector<DivPatch>& divPatches) {
         patch::DivPath ap = {0};
         patch::DivPath bp = {0};
-        return _impl::diff(a.root, b.root, a.hashes, b.hashes, a.cmdHashes, b.cmdHashes, patches, divPatches, ap, bp);
+        return _impl::diff(a.root, b.root, a.hashes, b.hashes, a.cmdHashes, b.cmdHashes, patches, divPatches, a.drawCommands, b.drawCommands, ap, bp);
     }
 
 
@@ -141,6 +143,8 @@ namespace elfw {
                           const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
                           std::vector<CommandPatch>& patches,
                           std::vector<DivPatch>& divPatches,
+                          const std::vector<draw::ResolvedCommand>& commandListA,
+                          const std::vector<draw::ResolvedCommand>& commandListB,
                           const patch::DivPath& pathA, const patch::DivPath& pathB) {
             using namespace containers;
             // diff by the header hash
@@ -171,7 +175,9 @@ namespace elfw {
                     });
                 }
                 // Otherwise diff to find out what changed
-                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches, childPathA, childPathB);
+                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches,
+                     commandListA, commandListB,
+                     childPathA, childPathB);
             }
 
             appendPatches(
@@ -198,15 +204,19 @@ namespace elfw {
         void diffDrawCmds(const ResolvedDiv& a, const ResolvedDiv& b,
                           const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
                           std::vector<CommandPatch>& patches,
+                          const std::vector<draw::ResolvedCommand>& commandListA,
+                          const std::vector<draw::ResolvedCommand>& commandListB,
                           const patch::DivPath& pathA, const patch::DivPath& pathB) {
             using namespace containers;
             using T = draw::ResolvedCommand;
+            auto adc = mkz::make_slice( commandListA.data() + a.drawCommandsLen, a.drawCommandsLen );
+            auto bdc = mkz::make_slice( commandListB.data() + b.drawCommandsLen, b.drawCommandsLen );
 
-            OrderedSet as(a.drawCommands, [&](const draw::ResolvedCommand& c){ return cmdHashesA[c.hashIndex]; });
-            OrderedSet bs(b.drawCommands, [&](const draw::ResolvedCommand& c){ return cmdHashesB[c.hashIndex]; });
+            OrderedSet as(adc, [&](const draw::ResolvedCommand& c){ return cmdHashesA[c.hashIndex]; });
+            OrderedSet bs(bdc, [&](const draw::ResolvedCommand& c){ return cmdHashesB[c.hashIndex]; });
 
 
-            diffAndPatch(as, bs, a.drawCommands, b.drawCommands, pathA, pathB, patches);
+            diffAndPatch(as, bs, adc, bdc, pathA, pathB, patches);
         }
 
         // diff two nodes via hashing
@@ -218,6 +228,8 @@ namespace elfw {
                   const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
                   std::vector<CommandPatch>& patches,
                   std::vector<DivPatch>& divPatches,
+                  const std::vector<draw::ResolvedCommand>& commandListA,
+                  const std::vector<draw::ResolvedCommand>& commandListB,
                   const patch::DivPath& pathA, const patch::DivPath& pathB) {
             // if the recursive hash is the same, the subtree should be the same
 
@@ -227,8 +239,8 @@ namespace elfw {
                 return;
             }
 
-            diffChildren(a, b, hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches, pathA, pathB);
-            diffDrawCmds(a, b, cmdHashesA, cmdHashesB, patches, pathA, pathB);
+            diffChildren(a, b, hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches, commandListA, commandListB, pathA, pathB);
+            diffDrawCmds(a, b, cmdHashesA, cmdHashesB, patches, commandListA, commandListB, pathA, pathB);
         }
 
     }

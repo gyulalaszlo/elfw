@@ -85,19 +85,6 @@ namespace elfw {
 
             // Store the first draw command index
             const size_t drawCommandsStartIdx = commandList.size();
-            const size_t drawCommandsEndIdx = drawCommandsStartIdx + div.drawCommands.size();
-
-            ResolvedDiv resolvedDiv = {
-                    div.key,
-                    frameRect,
-                    // Alloc the children vector
-                    std::vector<ResolvedDiv>(div.childDivs.size()),
-                    // Alloc the draw command vector
-                    drawCommandsStartIdx,
-                    drawCommandsEndIdx,
-//                    std::vector<draw::ResolvedCommand>(div.drawCommands.size()),
-                    0
-            };
 
 
             // write the resolved commands
@@ -110,11 +97,23 @@ namespace elfw {
                     }
             );
 
+            ResolvedDiv resolvedDiv = {
+                    div.key,
+                    frameRect,
+                    // Alloc the children vector
+                    std::vector<ResolvedDiv>(div.childDivs.size()),
+                    // Alloc the draw command vector
+                    drawCommandsStartIdx,
+                    div.drawCommands.size(),
+//                    std::vector<draw::ResolvedCommand>(div.drawCommands.size()),
+                    0
+            };
 
-            // write the resolved commands
-            std::transform( drawCmds.begin(), drawCmds.end(), resolvedDiv.drawCommands.begin(), [&](auto&& c){
-                return resolveCommand(frameRect, c);
-            });
+
+//            // write the resolved commands
+//            std::transform( drawCmds.begin(), drawCmds.end(), resolvedDiv.drawCommands.begin(), [&](auto&& c){
+//                return resolveCommand(frameRect, c);
+//            });
 
 
             // write the resolved chidren
@@ -135,7 +134,7 @@ namespace elfw {
 
             auto hashes = DivHashVector{};
             auto cmdHashes = CommandHashVector{};
-            div_hash::update(resolvedDiv, hashes, cmdHashes);
+            div_hash::update(resolvedDiv, hashes, cmdHashes, commandList);
 
             return { std::move(resolvedDiv), std::move(hashes), std::move(cmdHashes), std::move(commandList) };
         }

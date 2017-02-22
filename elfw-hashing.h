@@ -1,5 +1,6 @@
 #pragma once
 
+#include <slice.hpp>
 #include "elfw-base.h"
 #include "elfw-draw.h"
 #include "elfw-viewtree.h"
@@ -122,7 +123,7 @@ namespace elfw {
         // Recursively creates the div and command hashes for the tree
         // and updates the hash indices for both divs and draw commands
         // Returns the recursive hash.
-        std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes) {
+        std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes, std::vector<draw::ResolvedCommand>& commandsList) {
             using namespace stdhelpers;
             // store the size of the hashes vector, so we keep our entry
             const size_t hashIdx = hashes.size();
@@ -137,9 +138,11 @@ namespace elfw {
             // command hashes
             // ==============
 
-            hash_builder commandsHash(div.drawCommands.size());
+            auto drawCommands = mkz::make_slice( &commandsList[div.drawCommandsStart], div.drawCommandsLen );
+
+            hash_builder commandsHash(div.drawCommandsLen);
             // calculate the draw commands hash
-            for (auto& c : div.drawCommands) {
+            for (auto& c : drawCommands) {
 
                 hash_builder cmdHash;
                 cmdHash.add( c.frame, c.cmd );
@@ -154,7 +157,7 @@ namespace elfw {
             hash_builder childDivsHash(div.childDivs.size());
             for (auto& c : div.childDivs) {
                 // combine the child recursive hash with our hash
-                childDivsHash.combine(update(c, hashes, cmdHashes));
+                childDivsHash.combine(update(c, hashes, cmdHashes, commandsList));
             }
 
             hash_builder recursiveHash;

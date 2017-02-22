@@ -23,7 +23,7 @@ namespace elfw {
         std::vector<ResolvedDiv> childDivs;
         // position of the first and last draw command in the draw command list
         std::size_t drawCommandsStart;
-        std::size_t drawCommandsEnd;
+        std::size_t drawCommandsLen;
 //        std::vector<draw::ResolvedCommand> drawCommands;
 
         // index of the hashes in the resolved div hash list
