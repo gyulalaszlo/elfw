@@ -166,9 +166,14 @@ int main() {
     // resolve the tree 1
     auto viewRect = Rect<double>{{100, 200}, {640, 480}};
     auto v0resolved = elfw::resolve::convertToResolved(viewRect, v0);
+    return -10;
     auto v1resolved = elfw::resolve::convertToResolved(viewRect, v1);
 
-//    std::cout << v0resolved.root << "\n\n";
+    for (auto& d : v0resolved.divs) {
+
+        std::cout << " []----> " << d << "\n";
+    }
+//    std::cout << v0resolved.divs << "\n\n";
 //    std::cout << v1resolved.root << "\n\n";
 
 //    for (auto& p : v1resolved.drawCommands) {
@@ -201,19 +206,6 @@ int main() {
     elfw::draw::ResolvedCommandList cmds = {};
     std::vector<size_t> rectIndices = {};
     elfw::culling::getDrawCommandsFor( v1resolved.drawCommands, changedRects, cmds, rectIndices );
-
-    std::cout << "=== Commands to issue ====" << cmds.size() << "\n\n";
-    size_t j = 0;
-    for (size_t i = 0; i < changedRects.size(); ++i) {
-        const size_t lastWithThisRect = (i == changedRects.size() - 1) ? cmds.size() : rectIndices[i + 1];
-        std::cout << " -- with rect : " << changedRects[i] << " --\n";
-        for (;j < lastWithThisRect; ++j) {
-            std::cout << " i=" << i << " j = " << j << "  last=" << lastWithThisRect;
-
-            std::cout << " --> DRAW: :" << cmds[j];
-
-        }
-    }
 
     return 0;
 }

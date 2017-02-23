@@ -9,11 +9,12 @@ namespace elfw {
 
     // Represents a box wrapping relative coordinates
     struct Div {
+
         const char* key;
         const Frame<double> frame;
 
-        const std::vector<const Div> childDivs;
-        const std::vector<const draw::Command> drawCommands;
+        std::vector<Div> childDivs;
+        std::vector<const draw::Command> drawCommands;
     };
 
 
@@ -22,7 +23,7 @@ namespace elfw {
         const char* key;
         Rect<double> frame;
 
-        std::vector<ResolvedDiv> childDivs;
+//        std::vector<ResolvedDiv> childDivs;
         // position of the first and last draw command in the draw command list
         mkz::index_slice<draw::ResolvedCommand> drawCommands;
 

@@ -130,7 +130,9 @@ namespace elfw {
 
         s << "\n";
         doIndent();
-        s << "Div: '" << div.key << "'  " << div.frame << "\n";
+        std::cout.setf(std::ios::hex, std::ios::basefield);
+        s << "Div: '" <<(uintptr_t)&div <<  " -- key" << div.key << "'  " << div.frame << "\n";
+        std::cout.unsetf(std::ios::hex);
 
         indent += 1;
 
@@ -140,7 +142,7 @@ namespace elfw {
             s << cmd;
         }
 
-        for (auto& child : div.childDivs) {
+        for (const auto& child : div.childDivs) {
             debug(s, child, indent + 1);
         }
     }
@@ -163,12 +165,20 @@ namespace elfw {
         s << "\n";
         doIndent();
         s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" << div.hashIndex << " frame=" << div.frame
-          << "  drawStartIdx=" << div.drawCommands.start << "  drawLen=" << div.drawCommands.size() << " \n";
+          << "  drawStartIdx=" << div.drawCommands.start << "  drawLen=" << div.drawCommands.size()
+          << " \n";
 
         indent += 1;
 
-        for (auto& child : div.childDivs) {
-            debug(s, child, indent + 1);
+    }
+
+    template<typename S>
+    void debugChildren(S& s, const ResolvedDiv& div, const std::vector<ResolvedDiv>& divList, int indent = 0) {
+        debug(s, div, indent);
+
+
+        for (auto& child : mkz::to_slice( div.children, divList) ) {
+            debugChildren(s, child, divList, indent + 1);
         }
     }
 

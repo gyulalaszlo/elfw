@@ -123,15 +123,21 @@ namespace elfw {
         // Recursively creates the div and command hashes for the tree
         // and updates the hash indices for both divs and draw commands
         // Returns the recursive hash.
-        std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes, std::vector<draw::ResolvedCommand>& commandsList) {
+        std::size_t update(ResolvedDiv& div, DivHashVector& hashes, CommandHashVector& cmdHashes, std::vector<draw::ResolvedCommand>& commandsList, std::vector<ResolvedDiv>& divList) {
             using namespace stdhelpers;
             // store the size of the hashes vector, so we keep our entry
             const size_t hashIdx = hashes.size();
             // write our entry to the hash
-            hashes.push_back({});
+            printf("Hashes push : @%016zx [%zd els] data @ %016zx\n", (uintptr_t)&hashes, (uintptr_t)hashes.size(), (uintptr_t)hashes.data() );
+            hashes.emplace_back(DivHash{});
             // get the header hash
             hash_builder headerHash;
             hash_builder propsHash;
+
+            // KEY is a must
+            assert( div.key != nullptr );
+
+            printf("Header hash push : @%016zx [%zd els] data @ %016zx\n", (uintptr_t)&hashes, (uintptr_t)hashes.size(), (uintptr_t)hashes.data() );
             headerHash.add(std::string(div.key));
             propsHash.add(div.frame);
 
@@ -155,12 +161,17 @@ namespace elfw {
                 commandsHash.combine(cmdHash.get());
             }
 
+            auto childDivs = mkz::to_slice( div.children, divList );
+
             // children hashes
-            hash_builder childDivsHash(div.childDivs.size());
-            for (auto& c : div.childDivs) {
-                // combine the child recursive hash with our hash
-                childDivsHash.combine(update(c, hashes, cmdHashes, commandsList));
+            hash_builder childDivsHash(childDivs.size());
+            for (size_t i = 0; i < childDivs.size(); ++i) {
+                childDivsHash.combine(update(childDivs[i], hashes, cmdHashes, commandsList, divList));
             }
+//            for (auto& c : childDivs) {
+//                // combine the child recursive hash with our hash
+//                childDivsHash.combine(update(c, hashes, cmdHashes, commandsList, divList));
+//            }
 
             hash_builder recursiveHash;
             recursiveHash.combine(headerHash.get());

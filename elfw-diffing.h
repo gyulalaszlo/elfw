@@ -56,14 +56,36 @@ namespace elfw {
 
     // FWD
     namespace _impl {
-        void diff(const ResolvedDiv& a, const ResolvedDiv& b,
-                  const DivHashVector& hashesA, const DivHashVector& hashesB,
-                  const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
+
+        struct side_state_const {
+            const DivHashVector& hashes;
+            const CommandHashVector& cmdHashes;
+
+            const std::vector<draw::ResolvedCommand>& commandList;
+            const std::vector<ResolvedDiv>& divList;
+        };
+
+
+        struct side_state {
+            const ResolvedDiv& div;
+            const patch::DivPath& path;
+        };
+
+
+        struct diff_state_const {
+            const side_state_const a, b;
+        };
+
+        struct diff_state {
+            side_state a,b;
+        };
+
+
+        void diff(const diff_state_const& const_state, diff_state& state,
                   std::vector<CommandPatch>& patches,
-                  std::vector<DivPatch>& divPatches,
-                  const std::vector<draw::ResolvedCommand>& commandListA,
-                  const std::vector<draw::ResolvedCommand>& commandListB,
-                  const patch::DivPath& pathA, const patch::DivPath& pathB);
+                  std::vector<DivPatch>& divPatches
+        );
+
     }
 
 
@@ -73,7 +95,16 @@ namespace elfw {
               std::vector<DivPatch>& divPatches) {
         patch::DivPath ap = {0};
         patch::DivPath bp = {0};
-        return _impl::diff(a.root, b.root, a.hashes, b.hashes, a.cmdHashes, b.cmdHashes, patches, divPatches, a.drawCommands, b.drawCommands, ap, bp);
+
+        _impl::diff_state_const const_state = {
+                {a.hashes, a.cmdHashes, a.drawCommands, a.divs },
+                {b.hashes, b.cmdHashes, b.drawCommands, b.divs }
+        };
+        _impl::diff_state state = {
+                {a.divs[0], {0}},
+                {b.divs[0], {0}},
+        };
+        return _impl::diff( const_state, state, patches, divPatches);
     }
 
 
@@ -138,22 +169,26 @@ namespace elfw {
         // Child diffs
         // ===========
 
-        void diffChildren(const ResolvedDiv& a, const ResolvedDiv& b,
-                          const DivHashVector& hashesA, const DivHashVector& hashesB,
-                          const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
-                          std::vector<CommandPatch>& patches,
-                          std::vector<DivPatch>& divPatches,
-                          const std::vector<draw::ResolvedCommand>& commandListA,
-                          const std::vector<draw::ResolvedCommand>& commandListB,
-                          const patch::DivPath& pathA, const patch::DivPath& pathB) {
+        struct get_header_hash {
+            const DivHashVector& hashes;
+            std::size_t operator()(const ResolvedDiv& div) const {
+                return hashes[div.hashIndex].headerHash;
+            }
+        };
+
+        void diffChildren(
+                const diff_state_const& const_state,
+                diff_state& state,
+                std::vector<CommandPatch>& patches,
+                std::vector<DivPatch>& divPatches
+        ) {
             using namespace containers;
+            auto childDivsA = mkz::to_slice( state.a.div.children, const_state.a.divList);
+            auto childDivsB = mkz::to_slice( state.b.div.children, const_state.b.divList);
+
             // diff by the header hash
-            OrderedSet as(a.childDivs, [&](const ResolvedDiv& d){
-                return hashesA[d.hashIndex].headerHash;
-            });
-            OrderedSet bs(b.childDivs, [&](const ResolvedDiv& d){
-                return hashesB[d.hashIndex].headerHash;
-            });
+            OrderedSet as(childDivsA, get_header_hash{const_state.a.hashes});
+            OrderedSet bs(childDivsB, get_header_hash{const_state.b.hashes});
 
             Patches inA, inB, reordered, constant;
             ordered_set::diff(as, bs, inA, inB, reordered, constant);
@@ -161,38 +196,41 @@ namespace elfw {
 
             // check the children that stayed the same
             for (auto& child : constant) {
-                const auto& ac = a.childDivs[child.idxA];
-                const auto& bc = b.childDivs[child.idxB];
+                const auto& ac = childDivsA[child.idxA];
+                const auto& bc = childDivsB[child.idxB];
 
-                const auto childPathA = patch::append(pathA, (int)child.idxA);
-                const auto childPathB = patch::append(pathB, (int)child.idxB);
+                const auto childPathA = patch::append(state.a.path, (int)child.idxA);
+                const auto childPathB = patch::append(state.b.path, (int)child.idxB);
 
                 // check if the properties changed
-                if (hashesA[ac.hashIndex].propsHash != hashesB[bc.hashIndex].propsHash) {
+                if (const_state.a.hashes[ac.hashIndex].propsHash != const_state.b.hashes[bc.hashIndex].propsHash) {
                     divPatches.emplace_back(patch::UpdateProps<ResolvedDiv>{
-                             patch::base(childPathA, child.idxA, ac),
-                             patch::base(childPathB, child.idxB, bc),
+                            patch::base(childPathA, child.idxA, ac),
+                            patch::base(childPathB, child.idxB, bc),
                     });
                 }
-                // Otherwise diff to find out what changed
-                diff(a.childDivs[child.idxA], b.childDivs[child.idxB], hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches,
-                     commandListA, commandListB,
-                     childPathA, childPathB);
+
+                diff_state child_state = {
+                        { childDivsA[child.idxA], childPathA },
+                        { childDivsB[child.idxB], childPathB },
+                };
+
+                diff(const_state, child_state, patches, divPatches);
             }
 
             appendPatches(
-                    divPatches, a.childDivs, b.childDivs,
+                    divPatches, childDivsA, childDivsB,
 
                     inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
-                        return patch::Remove < ResolvedDiv > {patch::base(pathA, ai, ae)};
+                        return patch::Remove < ResolvedDiv > {patch::base(state.a.path, ai, ae)};
                     },
 
                     inB, [&](size_t, size_t bi, auto&&, auto&& be) {
-                        return patch::Add<ResolvedDiv> { patch::base(pathB, bi, be) };
+                        return patch::Add<ResolvedDiv> { patch::base(state.b.path, bi, be) };
                     },
 
                     reordered, [&](size_t ai, size_t bi, auto&& ae, auto&& be) {
-                        return patch::Reorder<ResolvedDiv> { patch::base(pathA, ai, ae), patch::base(pathB, bi, be) };
+                        return patch::Reorder<ResolvedDiv> { patch::base(state.a.path, ai, ae), patch::base(state.b.path, bi, be) };
                     }
             );
             // TODO: check the reordered ones too
@@ -201,49 +239,37 @@ namespace elfw {
 
         // Draw command diffs
         // ==================
-        void diffDrawCmds(const ResolvedDiv& a, const ResolvedDiv& b,
-                          const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
-                          std::vector<CommandPatch>& patches,
-                          const std::vector<draw::ResolvedCommand>& commandListA,
-                          const std::vector<draw::ResolvedCommand>& commandListB,
-                          const patch::DivPath& pathA, const patch::DivPath& pathB) {
+
+        void diffDrawCmds(
+                const diff_state_const& const_state,
+                diff_state& state,
+                std::vector<CommandPatch>& patches,
+                std::vector<DivPatch>& divPatches
+        ) {
             using namespace containers;
             using T = draw::ResolvedCommand;
-            auto adc = mkz::to_slice( a.drawCommands, commandListA);
-            auto bdc = mkz::to_slice( b.drawCommands, commandListB);
-//            auto adc = mkz::make_slice( commandListA.data() + a.drawCommandsLen, a.drawCommandsLen );
-//            auto bdc = mkz::make_slice( commandListB.data() + b.drawCommandsLen, b.drawCommandsLen );
 
-            OrderedSet as(adc, [&](const draw::ResolvedCommand& c){ return cmdHashesA[c.hashIndex]; });
-            OrderedSet bs(bdc, [&](const draw::ResolvedCommand& c){ return cmdHashesB[c.hashIndex]; });
+            auto adc = mkz::to_slice( state.a.div.drawCommands, const_state.a.commandList);
+            auto bdc = mkz::to_slice( state.b.div.drawCommands, const_state.b.commandList);
+
+            OrderedSet as(adc, [&](auto& c){ return const_state.a.cmdHashes[c.hashIndex]; });
+            OrderedSet bs(bdc, [&](auto& c){ return const_state.b.cmdHashes[c.hashIndex]; });
 
 
-            diffAndPatch(as, bs, adc, bdc, pathA, pathB, patches);
+            diffAndPatch(as, bs, adc, bdc, state.a.path, state.b.path, patches);
         }
 
+        void diff(
+                const diff_state_const& const_state,
+                diff_state& state,
+                std::vector<CommandPatch>& patches,
+                std::vector<DivPatch>& divPatches
+        ) {
+            diffDrawCmds(const_state, state, patches, divPatches);
+            diffChildren(const_state, state, patches, divPatches);
+        }
         // diff two nodes via hashing
         // --------------------------
-
-        // Diffs two different divs
-        void diff(const ResolvedDiv& a, const ResolvedDiv& b,
-                  const DivHashVector& hashesA, const DivHashVector& hashesB,
-                  const CommandHashVector& cmdHashesA, const CommandHashVector& cmdHashesB,
-                  std::vector<CommandPatch>& patches,
-                  std::vector<DivPatch>& divPatches,
-                  const std::vector<draw::ResolvedCommand>& commandListA,
-                  const std::vector<draw::ResolvedCommand>& commandListB,
-                  const patch::DivPath& pathA, const patch::DivPath& pathB) {
-            // if the recursive hash is the same, the subtree should be the same
-
-            // check the hashes
-
-            if (hashesA[a.hashIndex].recursiveHash == hashesB[b.hashIndex].recursiveHash) {
-                return;
-            }
-
-            diffChildren(a, b, hashesA, hashesB, cmdHashesA, cmdHashesB, patches, divPatches, commandListA, commandListB, pathA, pathB);
-            diffDrawCmds(a, b, cmdHashesA, cmdHashesB, patches, commandListA, commandListB, pathA, pathB);
-        }
 
     }
 }
