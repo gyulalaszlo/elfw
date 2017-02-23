@@ -34,7 +34,7 @@ namespace elfw {
             using Solid = Color;
             using None = std::nullptr_t;
 
-            None none() { return nullptr; }
+            inline None none() { return nullptr; }
         }
 
         using Fill = mkz::variant<
@@ -53,7 +53,7 @@ namespace elfw {
                 Color color;
             };
 
-            None none() { return nullptr; }
+            inline None none() { return nullptr; }
         }
 
 

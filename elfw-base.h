@@ -1,7 +1,16 @@
 #pragma once
 
 
+#include <cassert>
+
 namespace elfw {
+
+
+    // Some quick and dirty math functions so we dont have to include algorithm here just for std::min
+    namespace numbers {
+        template <typename T> T min(T a, T b) { return (a < b) ? a : b; }
+        template <typename T> T max(T a, T b) { return (a > b) ? a : b; }
+    }
 
     // 2D VECTOR
     // =========
@@ -107,11 +116,15 @@ namespace elfw {
     // =================
 
     namespace vec2 {
-        template <typename T>
-        Vec2<T> min(Vec2<T> v1, Vec2<T> v2) { return { std::min( v1.x, v2.x ), std::min(v1.y, v2.y) }; }
+        // Lifter for functions on vectors
+        template <typename T, typename Fn>
+        Vec2<T> combine(Vec2<T> v1, Vec2<T> v2, Fn&& op) { return { op(v1.x, v2.x ), op(v1.y, v2.y) }; }
 
         template <typename T>
-        Vec2<T> max(Vec2<T> v1, Vec2<T> v2) { return { std::max( v1.x, v2.x ), std::max(v1.y, v2.y) }; }
+        Vec2<T> min(Vec2<T> v1, Vec2<T> v2) { return vec2::combine<T>(v1, v2, numbers::min<T>); }
+
+        template <typename T>
+        Vec2<T> max(Vec2<T> v1, Vec2<T> v2) { return vec2::combine<T>(v1, v2, numbers::max<T>); }
     }
 
     template <typename T>
@@ -151,13 +164,5 @@ namespace elfw {
         }
 
 
-//        template<typename T>
-//        bool contains(const Rect<T>& outer, const Rect<T>& inner) {
-//
-//            return outer.pos.x >= inner.pos.x
-//                   && outer.pos.y >= inner.pos.y
-//                   && right(inner) <= right(outer)
-//                   && bottom(inner) <= bottom(outer);
-//        }
     }
 }

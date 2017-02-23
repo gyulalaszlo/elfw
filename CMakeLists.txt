@@ -15,7 +15,7 @@ add_subdirectory(vendor)
 set(ELFW_FILES
         elfw.h elfw-draw.h elfw-base.h
         elfw-hashing.h elfw-viewtree.h elfw-orderedset.h elfw-debuging.h elfw-diffing.h elfw-viewtree-resolve.h elfw-culling.h
-        )
+        elfw-viewtree-resolve.cpp elfw-hashing.cpp elfw-culling.cpp elfw-diffing.cpp elfw-orderedset.cpp)
 
 set(SOURCE_FILES main.cpp)
 add_executable(MVC_UI_test ${SOURCE_FILES} ${ELFW_FILES})

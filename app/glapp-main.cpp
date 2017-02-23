@@ -209,8 +209,8 @@ int main(void)
 {
     elfw::ResourceLoader loader("shaders.data");
 
-    auto vs = loader.get("shaders/basic.vertexshader");
-    auto fs = loader.get("shaders/basic.fragmentshader");
+    auto vs = loader.get("shaders/basic.vert");
+    auto fs = loader.get("shaders/basic.frag");
 
 
     GLuint VertexArrayID;

@@ -1,9 +1,6 @@
-#include <iostream>
 #include <vector>
-#include "mkzbase/variant.h"
 
 #include "elfw.h"
-#include "elfw-culling.h"
 
 namespace {
 
@@ -178,15 +175,15 @@ int main() {
     std::vector<elfw::DivPatch> divDiff = {};
 
     elfw::diff(v0resolved, v1resolved, cmdDiff, divDiff);
-//    std::cout << "=== Draw changes====\n\n";
-//    for (auto& p : cmdDiff) {
-//        std::cout << ":: " << p << "\n";
-//    }
+    std::cout << "=== Draw changes====\n\n";
+    for (auto& p : cmdDiff) {
+        std::cout << ":: " << p << "\n";
+    }
 
-//    std::cout << "=== DIV changes====\n\n";
-//    for (auto& p : divDiff) {
-//        std::cout << "  Div:: " << p << "\n";
-//    }
+    std::cout << "=== DIV changes====\n\n";
+    for (auto& p : divDiff) {
+        std::cout << "  Div:: " << p << "\n";
+    }
 
 //    std::vector<Rect<double>> changedRects = {};
 //    elfw::culling::getChangedRectangles( cmdDiff, changedRects );

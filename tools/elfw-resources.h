@@ -61,7 +61,7 @@ namespace elfw {
             data.resize(s);
             f.read(data.data(), data.size());
 
-            printf("[Resource] Read %zd bytes from binary '%s'", data.size(), file.c_str());
+            printf("[Resource] Read %zd bytes from binary '%s'\n", data.size(), file.c_str());
 
             return true;
         }
