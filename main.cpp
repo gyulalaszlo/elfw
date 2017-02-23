@@ -168,25 +168,25 @@ int main() {
     auto v0resolved = elfw::resolveDiv(viewRect, v0);
     auto v1resolved = elfw::resolveDiv(viewRect, v1);
 
-    for (auto& d : v0resolved.divs) {
+//    for (auto& d : v0resolved.divs) {
+//
+//        std::cout << " []----> " << d << "\n";
+//    }
 
-        std::cout << " []----> " << d << "\n";
-    }
-
-    std::cout << "=== Get diff ====\n\n";
+//    std::cout << "=== Get diff ====\n\n";
     std::vector<elfw::CommandPatch> cmdDiff = {};
     std::vector<elfw::DivPatch> divDiff = {};
 
     elfw::diff(v0resolved, v1resolved, cmdDiff, divDiff);
-    std::cout << "=== Draw changes====\n\n";
-    for (auto& p : cmdDiff) {
-        std::cout << ":: " << p << "\n";
-    }
+//    std::cout << "=== Draw changes====\n\n";
+//    for (auto& p : cmdDiff) {
+//        std::cout << ":: " << p << "\n";
+//    }
 
-    std::cout << "=== DIV changes====\n\n";
-    for (auto& p : divDiff) {
-        std::cout << "  Div:: " << p << "\n";
-    }
+//    std::cout << "=== DIV changes====\n\n";
+//    for (auto& p : divDiff) {
+//        std::cout << "  Div:: " << p << "\n";
+//    }
 
 //    std::vector<Rect<double>> changedRects = {};
 //    elfw::culling::getChangedRectangles( cmdDiff, changedRects );
