@@ -2,6 +2,7 @@
 //
 // Created by Miles Gibson on 21/02/17.
 //
+#include "mkz-algorithm.h"
 #include "elfw-viewtree.h"
 #include "elfw-hashing.h"
 #include "elfw-draw.h"

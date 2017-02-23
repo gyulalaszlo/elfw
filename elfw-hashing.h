@@ -107,19 +107,10 @@ MAKE_HASHABLE(elfw::draw::Command, t.frame, t.cmd)
 MAKE_HASHABLE(elfw::Div, t.frame, t.key)
 
 
-namespace elfw {
-    struct DivHash {
-        // the hashes to prevent re-hashing
-        std::size_t headerHash;
-        // The hash of any non-key property (like frame)
-        // useful for checking if the props have changed
-        // and the input handling needs to be updated in accordance
-        std::size_t propsHash;
-        std::size_t recursiveHash;
-    };
+#undef MAKE_HASHABLE
+#undef UNITY_HASH
 
-    using DivHashVector = std::vector<DivHash>;
-    using CommandHashVector = std::vector<std::size_t>;
+namespace elfw {
 
     using Hash = std::size_t;
     using HashVector = std::vector<Hash>;
@@ -131,6 +122,8 @@ namespace elfw {
 
 
     namespace hash_store {
+
+        // Resizes the div parts in the hash store
         void resizeDivs(HashStore& h, size_t n) {
             h.divHeaders.resize(n);
             h.divProps.resize(n);
@@ -144,11 +137,11 @@ namespace elfw {
 
         // Updates the draw command hashes for all commands
         void updateDrawCommandHashes(
-                CommandHashVector& hashes,
+                HashStore& hashes,
                 const std::vector<draw::ResolvedCommand>& c
         ) {
             using namespace stdhelpers;
-            std::transform(c.begin(), c.end(), hashes.begin(),
+            std::transform(c.begin(), c.end(), hashes.drawCommands.begin(),
                            [](auto&& c) { return build_hash(c.frame, c.cmd); }
             );
         }
@@ -175,20 +168,11 @@ namespace elfw {
                 const std::vector<ResolvedDiv>& d
         ) {
             using namespace stdhelpers;
-            std::transform(d.begin(), d.end(), hashes.divCommands.begin(),
-                           [&](const ResolvedDiv& c) {
-
-                               auto dc = c.drawCommands;
-                               hash_builder commandsHash(dc.size());
-
-                               // calculate the draw commands hash
-                               for (auto& cmdHash : mkz::with_container(dc.as<Hash>(), hashes.drawCommands )) {
-                                   // combine with the commands hash
-                                   commandsHash.combine(cmdHash);
-                               }
-
-                               return commandsHash.get();
-                           }
+            std::transform(
+                    d.begin(), d.end(), hashes.divCommands.begin(),
+                    [&](const ResolvedDiv& c) {
+                        return hash_seq(0, mkz::with_container(c.drawCommands.as<Hash>(), hashes.drawCommands));
+                    }
             );
         }
 
@@ -228,7 +212,7 @@ namespace elfw {
             hash_store::resizeDivs( hashStore, divList.size() );
             hashStore.drawCommands.resize( commandsList.size() );
 
-            updateDrawCommandHashes(hashStore.drawCommands, commandsList);
+            updateDrawCommandHashes(hashStore, commandsList);
             updateDivHeaderAndPropHashes(hashStore, divList);
             updateCommandHashes(hashStore, divList);
             updateDivChildHashes(hashStore, divList);
