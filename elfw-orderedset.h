@@ -16,6 +16,18 @@ namespace elfw {
         class OrderedSet {
         public:
 
+            enum SkipHash { SkipHash };
+
+            template <typename Seq>
+            OrderedSet(enum SkipHash, Seq&& src) {
+                // Store the indices for the hashes
+                size_t i = 0;
+                for (const auto& e : src) {
+                    hashToIndex.insert({e, i});
+                    ++i;
+                }
+            }
+
             template<typename Seq>
             OrderedSet(const Seq& src) {
                 // Store the indices for the hashes

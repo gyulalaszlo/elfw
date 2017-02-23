@@ -23,12 +23,10 @@ namespace elfw {
         const char* key;
         Rect<double> frame;
 
-//        std::vector<ResolvedDiv> childDivs;
         // position of the first and last draw command in the draw command list
         mkz::index_slice<draw::ResolvedCommand> drawCommands;
 
         // index of the hashes in the resolved div hash list
-        std::size_t hashIndex;
         mkz::index_slice<ResolvedDiv> children;
     };
 

@@ -128,7 +128,6 @@ namespace elfw {
             // The area where the result of this command is opaque
             CommandOp cmd;
 
-            std::size_t hashIndex;
         };
 
 

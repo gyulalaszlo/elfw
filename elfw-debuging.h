@@ -77,7 +77,7 @@ namespace elfw {
 
         template<typename S>
         S& operator<<(S& s, const ResolvedCommand& c) {
-            s << "{[RESOLVED] frame=" << c.frame << ", hashIdx=" << c.hashIndex << " ";
+            s << "{[RESOLVED] frame=" << c.frame << " ";
             c.cmd.match(
                     [&](const cmds::Rectangle& r) { s << r; },
                     [&](const cmds::RoundedRectangle& r) { s << r; },
@@ -164,7 +164,7 @@ namespace elfw {
 
         s << "\n";
         doIndent();
-        s << "RESOLVED-Div: '" << div.key << "'   hashIdx=" << div.hashIndex << " frame=" << div.frame
+        s << "RESOLVED-Div: '" << div.key << " frame=" << div.frame
           << "  drawStartIdx=" << div.drawCommands.start << "  drawLen=" << div.drawCommands.size()
           << " \n";
 

@@ -11,49 +11,43 @@ namespace elfw {
 
 
     struct ViewTreeWithHashes {
-        DivHashVector hashes;
-        CommandHashVector cmdHashes;
+        HashStore hashStore;
 
         draw::ResolvedCommandList drawCommands;
         std::vector<ResolvedDiv> divs;
     };
 
+    // Converts a Div tree to ResolvedDivs and hashes all data in the tree
+    ViewTreeWithHashes resolveDiv(Rect<double> viewRect, const Div& div);
 
     namespace resolve {
 
-        draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command cmd ) {
+        draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command cmd) {
             // calc the frame before hashing
-            auto frameRect = frame::resolve( cmd.frame, viewRect );
-            // generate the hash here
-            stdhelpers::hash_builder cmdHash;
-            cmdHash.add(frameRect);
-            cmdHash.add(cmd.cmd);
+            auto frameRect = frame::resolve(cmd.frame, viewRect);
             return {
                     frameRect,
-                    cmd.cmd,
-                    cmdHash.get()
+                    cmd.cmd
             };
         }
 
 
-
-
-
-
-        template <typename Divs>
-        void resolveRec(Rect<double> viewRect,
-                            Divs&& divs,
-                            draw::ResolvedCommandList& commandList,
-                            std::vector<ResolvedDiv>& divList
+        template<typename Divs>
+        void resolveRec(
+                Rect<double> viewRect,
+                Divs&& divs,
+                draw::ResolvedCommandList& commandList,
+                std::vector<ResolvedDiv>& divList
         ) {
-            mkz::tree_to_linear_map<ResolvedDiv>( divs, divList, viewRect,
-                    [&](auto&& frameRect, const Div& div, auto&& recurse)   {
+            mkz::tree_to_linear_map<ResolvedDiv>(
+                    divs, divList, viewRect,
+                    [&](auto&& frameRect, const Div& div, auto&& recurse) {
 
                         // resolve commands
                         auto cmds_slice = mkz::indexed_slice_from_append<draw::ResolvedCommand>(
                                 div.drawCommands.begin(), div.drawCommands.end(),
                                 commandList,
-                                [&](auto&& cmd){
+                                [&](auto&& cmd) {
                                     return resolveCommand(frameRect, cmd);
                                 });
 
@@ -63,8 +57,6 @@ namespace elfw {
                                 frameRect,
                                 // The draw commands index_slice
                                 cmds_slice.slice(),
-                                // The hash for later
-                                0,
                                 // children indices
                                 recurse(frame::resolve(div.frame, frameRect), div.childDivs)
                         };
@@ -72,25 +64,16 @@ namespace elfw {
             );
         }
 
-
-
-
-
-        // Converts a Div tree to ResolvedDivs and hashes all data in the tree
-        ViewTreeWithHashes convertToResolved(Rect<double> viewRect, const Div& div) {
-            auto commandList = draw::ResolvedCommandList{};
-            auto divList = std::vector<ResolvedDiv>{};
-//            resolve(viewRect, div, commandList, divList);
-            resolveRec(viewRect, std::vector<Div>{div}, commandList, divList);
-
-            auto hashes = DivHashVector{};
-            auto cmdHashes = CommandHashVector{};
-            div_hash::update(divList[0], hashes, cmdHashes, commandList, divList);
-
-            return { std::move(hashes), std::move(cmdHashes), std::move(commandList), std::move(divList) };
-        }
-
-
     }
+
+    // Converts a Div tree to ResolvedDivs and hashes all data in the tree
+    ViewTreeWithHashes resolveDiv(Rect<double> viewRect, const Div& div) {
+        auto v = ViewTreeWithHashes { };
+        resolve::resolveRec(viewRect, std::vector<Div>{div}, v.drawCommands, v.divs);
+        div_hash::update(v.divs[0], v.hashStore, v.drawCommands, v.divs);
+        return v;
+    }
+
+
 
 }

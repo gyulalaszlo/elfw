@@ -165,19 +165,13 @@ int main() {
 
     // resolve the tree 1
     auto viewRect = Rect<double>{{100, 200}, {640, 480}};
-    auto v0resolved = elfw::resolve::convertToResolved(viewRect, v0);
-    auto v1resolved = elfw::resolve::convertToResolved(viewRect, v1);
+    auto v0resolved = elfw::resolveDiv(viewRect, v0);
+    auto v1resolved = elfw::resolveDiv(viewRect, v1);
 
     for (auto& d : v0resolved.divs) {
 
         std::cout << " []----> " << d << "\n";
     }
-//    std::cout << v0resolved.divs << "\n\n";
-//    std::cout << v1resolved.root << "\n\n";
-
-//    for (auto& p : v1resolved.drawCommands) {
-//        std::cout << " []----> " << p << "\n";
-//    }
 
     std::cout << "=== Get diff ====\n\n";
     std::vector<elfw::CommandPatch> cmdDiff = {};
@@ -194,24 +188,25 @@ int main() {
         std::cout << "  Div:: " << p << "\n";
     }
 
-    std::vector<Rect<double>> changedRects = {};
-    elfw::culling::getChangedRectangles( cmdDiff, changedRects );
+//    std::vector<Rect<double>> changedRects = {};
+//    elfw::culling::getChangedRectangles( cmdDiff, changedRects );
 
-    std::cout << "=== Rect changes ====\n\n";
-    for (auto& r : changedRects) {
-        std::cout << " == Changed rect:" << r << "\n";
-    }
+//    std::cout << "=== Rect changes ====\n\n";
+//    for (auto& r : changedRects) {
+//        std::cout << " == Changed rect:" << r << "\n";
+//    }
 
-    elfw::draw::ResolvedCommandList cmds = {};
-    std::vector<size_t> rectIndices = {};
-    elfw::culling::getDrawCommandsFor( v1resolved.drawCommands, changedRects, cmds, rectIndices );
+//    elfw::draw::ResolvedCommandList cmds = {};
+//    std::vector<size_t> rectIndices = {};
+//    elfw::culling::getDrawCommandsFor( v1resolved.drawCommands, changedRects, cmds, rectIndices );
+
+    auto culledCommands = elfw::cullDrawCommands( v1resolved.drawCommands, cmdDiff );
 
     std::cout << "=== cmd changes ====\n\n";
-    rectIndices.emplace_back(cmds.size());
-    for (int i = 0; i < changedRects.size(); ++i) {
-        std::cout << "--- with rect: #" << i << "  " << changedRects[i] << " max:" << rectIndices[i + 1]  << " ---\n";
-        for (size_t j = rectIndices[i]; j < rectIndices[i + 1]; ++j) {
-            std::cout << " ->" << j  << " == Changed cmd:" << cmds[j] << "\n";
+    for (int i = 0; i < culledCommands.changedRects.size(); ++i) {
+        std::cout << "--- with rect: #" << i << "  " << culledCommands.changedRects[i]  << " ---\n";
+        for (size_t j = culledCommands.rectIndices[i]; j < culledCommands.rectIndices[i + 1]; ++j) {
+            std::cout << " ->" << j  << " == Changed cmd:" << culledCommands.drawCommands[j] << "\n";
         }
     }
 
