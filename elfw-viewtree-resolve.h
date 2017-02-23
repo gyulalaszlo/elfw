@@ -23,13 +23,8 @@ namespace elfw {
 
     namespace resolve {
 
-        draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command cmd) {
-            // calc the frame before hashing
-            auto frameRect = frame::resolve(cmd.frame, viewRect);
-            return {
-                    frameRect,
-                    cmd.cmd
-            };
+        draw::ResolvedCommand resolveCommand(Rect<double> viewRect, const draw::Command& cmd) {
+            return { frame::resolve(cmd.frame, viewRect), cmd.cmd };
         }
 
 
@@ -50,14 +45,13 @@ namespace elfw {
                                 commandList,
                                 [&](auto&& cmd) {
                                     return resolveCommand(frameRect, cmd);
-                                });
+                                }).slice();
 
                         // resolve divs
                         return ResolvedDiv{
                                 div.key,
                                 frameRect,
-                                // The draw commands index_slice
-                                cmds_slice.slice(),
+                                cmds_slice,
                                 // children indices
                                 recurse(frame::resolve(div.frame, frameRect), div.childDivs)
                         };

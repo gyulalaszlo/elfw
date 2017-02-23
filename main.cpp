@@ -206,7 +206,8 @@ int main() {
     for (int i = 0; i < culledCommands.changedRects.size(); ++i) {
         std::cout << "--- with rect: #" << i << "  " << culledCommands.changedRects[i]  << " ---\n";
         for (size_t j = culledCommands.rectIndices[i]; j < culledCommands.rectIndices[i + 1]; ++j) {
-            std::cout << " ->" << j  << " == Changed cmd:" << culledCommands.drawCommands[j] << "\n";
+            std::cout << " ->" << j  << " == Changed cmd:" << culledCommands.drawCommands[j];
+
         }
     }
 
