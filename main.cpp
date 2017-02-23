@@ -166,7 +166,6 @@ int main() {
     // resolve the tree 1
     auto viewRect = Rect<double>{{100, 200}, {640, 480}};
     auto v0resolved = elfw::resolve::convertToResolved(viewRect, v0);
-    return -10;
     auto v1resolved = elfw::resolve::convertToResolved(viewRect, v1);
 
     for (auto& d : v0resolved.divs) {
@@ -206,6 +205,15 @@ int main() {
     elfw::draw::ResolvedCommandList cmds = {};
     std::vector<size_t> rectIndices = {};
     elfw::culling::getDrawCommandsFor( v1resolved.drawCommands, changedRects, cmds, rectIndices );
+
+    std::cout << "=== cmd changes ====\n\n";
+    rectIndices.emplace_back(cmds.size());
+    for (int i = 0; i < changedRects.size(); ++i) {
+        std::cout << "--- with rect: #" << i << "  " << changedRects[i] << " max:" << rectIndices[i + 1]  << " ---\n";
+        for (size_t j = rectIndices[i]; j < rectIndices[i + 1]; ++j) {
+            std::cout << " ->" << j  << " == Changed cmd:" << cmds[j] << "\n";
+        }
+    }
 
     return 0;
 }
