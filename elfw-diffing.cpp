@@ -29,33 +29,9 @@ namespace {
               std::vector<DivPatch>& divPatches
     );
 
-    // Appending view patches
-    // ----------------------
 
-    //TODO: do we love the "magic" here?
-
-    template<typename T, typename SeqA, typename SeqB>
-    void appendPatches(std::vector<Patch<T>>& patches, SeqA&& a, SeqB&& b) {}
-
-    template<typename T, typename SeqA, typename SeqB, typename Fn, typename... Args>
-    void appendPatches(std::vector<Patch<T>>& patches, SeqA&& a, SeqB&& b,
-                       const containers::Patches& osPatches, Fn&& fn,
-                       Args&& ... args) {
-        const auto start = patches.size();
-        patches.resize(patches.size() + osPatches.size());
-        std::transform(osPatches.begin(), osPatches.end(), &patches[start],
-                       [&](const containers::OrderedSetPatch& p) -> Patch<T> {
-                           const auto& ae = a[p.idxA];
-                           const auto& be = b[p.idxB];
-                           return static_cast<Patch<T>>( fn(p.idxA, p.idxB, ae, be));
-                       });
-        appendPatches(patches, a, b, args...);
-
-    }
-
-
-// Generalized diff
-// ----------------
+    // Generalized diff
+    // ----------------
 
     template<typename T, typename Seq, typename Fn>
     void diffAndPatch(const std::pair<containers::OrderedSet, containers::OrderedSet>& sets,
@@ -73,32 +49,32 @@ namespace {
         // TODO: check the reordered ones too
         fn(constant);
 
-        appendPatches(
-                patches, seq.first, seq.second,
+        auto appendPatches = [&](const containers::Patches& osPatches, auto fn) {
+            const auto start = patches.size();
+            patches.resize(patches.size() + osPatches.size());
+            // append the patches
+            std::transform(osPatches.begin(), osPatches.end(), &patches[start],
+                           [&](const containers::OrderedSetPatch& p) -> Patch<T> {
+                               const auto& ae = seq.first[p.idxA];
+                               const auto& be = seq.second[p.idxB];
+                               return static_cast<Patch<T>>( fn(p.idxA, p.idxB, ae, be));
+                           });
+        };
 
-                inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
-                    return patch::Remove<T> {patch::base(paths.first, ai, ae)};
-                },
+        appendPatches(inA, [&](size_t ai, size_t, auto&& ae, auto&&) {
+            return patch::Remove<T> {patch::base(paths.first, ai, ae)};
+        });
 
-                inB, [&](size_t, size_t bi, auto&&, auto&& be) {
-                    return patch::Add<T> {patch::base(paths.second, bi, be)};
-                },
+        appendPatches(inB, [&](size_t, size_t bi, auto&&, auto&& be) {
+            return patch::Add<T> {patch::base(paths.second, bi, be)};
+        });
 
-                reordered, [&](size_t ai, size_t bi, const T& ae, const T& be) {
-                    return patch::Reorder<T> {patch::base(paths.first, ai, ae), patch::base(paths.second, bi, be)};
-                }
-        );
+        appendPatches(reordered, [&](size_t ai, size_t bi, const T& ae, const T& be) {
+            return patch::Reorder<T> {patch::base(paths.first, ai, ae), patch::base(paths.second, bi, be)};
+        });
 
     }
 
-    template<typename T, typename Seq>
-    void diffAndPatch(const std::pair<containers::OrderedSet, containers::OrderedSet>& sets,
-                      const std::pair<Seq, Seq>& seq,
-                      const std::pair<patch::DivPath, patch::DivPath>& paths,
-                      std::vector<Patch<T>>& patches
-    ) {
-        diffAndPatch(sets, seq, paths, patches, [](auto&& _) {});
-    }
 
     inline containers::OrderedSet hashes_to_set(mkz::index_slice<Hash> bounds, const HashVector& hashVec) {
 
@@ -170,46 +146,6 @@ namespace {
     ) {
         using namespace containers;
 
-//            using Side = struct {
-//                side_state& state;
-//                const ViewTreeWithHashes& c_state;
-//            };
-//
-//
-//            std::array<Side, 2> src = {
-//                    Side{ state.a, const_state.a },
-//                    Side{ state.b, const_state.b },
-//            };
-//
-//            auto make_dc = [&](Side& side){
-//                return mkz::with_container(side.state.div.drawCommands, side.c_state.drawCommands );
-//            };
-//
-//
-//            auto make_dh = [&](Side& side){
-//                return OrderedSet(
-//                        OrderedSet::SkipHash,
-//                        side.state.div.drawCommands.using_container( side.c_state.hashStore.drawCommands ));
-//            };
-//
-//            auto do_diffing = [&](auto&& cmds, auto&& cmdHashes ){
-//                diffAndPatch(cmdHashes, cmds, std::make_pair( state.a.path, state.b.path), patches );
-//            };
-//
-//            auto make_sides = [&](Side side){
-//                auto cl = make_dc(side);
-//                auto os = make_dh(side);
-//            };
-
-//            auto make_commands_list = mkz::make_pipe( make_dc );
-//            auto make_commands_hashes = mkz::make_pipe( make_dh, make_os );
-//            auto diffed = mkz::pipes::combine( do_diffing, make_commands_list, make_commands_hashes );
-
-
-
-
-
-
         auto dc = std::make_pair(
                 mkz::with_container(state.a.div.drawCommands, const_state.a.drawCommands),
                 mkz::with_container(state.b.div.drawCommands, const_state.b.drawCommands)
@@ -225,7 +161,7 @@ namespace {
                 OrderedSet(OrderedSet::SkipHash, dh.second)
         );
 
-        diffAndPatch(os, dc, std::make_pair(state.a.path, state.b.path), patches);
+        diffAndPatch(os, dc, std::make_pair(state.a.path, state.b.path), patches, [](auto) {});
     }
 
 
