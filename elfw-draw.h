@@ -34,7 +34,7 @@ namespace elfw {
             using Solid = Color;
             using None = std::nullptr_t;
 
-            inline None none() { return nullptr; }
+            inline constexpr None none() { return nullptr; }
         }
 
         using Fill = mkz::variant<
@@ -53,7 +53,7 @@ namespace elfw {
                 Color color;
             };
 
-            inline None none() { return nullptr; }
+            inline constexpr None none() { return nullptr; }
         }
 
 
@@ -103,24 +103,27 @@ namespace elfw {
 
             struct fillIsOpaque_t {
                 // solid fill is opaque if the the alpha is max
-                bool operator()(const fill::Solid& f) const { return f.a == 0xff; }
+                bool constexpr operator()(const fill::Solid& f) const { return f.a == 0xff; }
                 // no fill is not opaque
-                bool operator()(const fill::None& _) const { return false; }
+                bool constexpr operator()(const fill::None& _) const { return false; }
             };
 
             // Checks if the command results in an opaque frame
             struct isOpaque_t {
 
-                bool operator()(const Rectangle& r) const {
+                bool constexpr operator()(const Rectangle& r) const {
                     return r.fill.match(fillIsOpaque_t{});
                 }
 
-                bool operator()(const RoundedRectangle& r) const { return false; }
-                bool operator()(const Ellipse& r) const { return false; }
+                bool constexpr operator()(const RoundedRectangle& r) const { return false; }
+                bool constexpr operator()(const Ellipse& r) const { return false; }
             };
 
 
         }
+
+        // Resolved commands
+        // =================
 
         struct ResolvedCommand {
             // The area touched by the command
